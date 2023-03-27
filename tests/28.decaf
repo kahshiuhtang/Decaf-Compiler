@@ -1,6 +1,12 @@
 class IntList{
 	int value;
 	IntList next;
+	IntList(){
+
+	}
+	IntList(int a){
+		
+	}
 	public static IntList create_list(int v) {
 		IntList new_element;
 		new_element = new IntList();

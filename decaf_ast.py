@@ -1,8 +1,25 @@
-class AST:
-    def __init__(self):
-        self.classes = []
+class AST():
+    def __init__(self, classes):
+        self.classes = classes
         self.methods = []
         self.variables = []
+        self.constructors = []
+        self.setup()
+    
+    def print(self):
+        for x in self.classes:
+            x.print()
+    def setup(self):
+        for x in self.classes:
+            for field in x.fields.values():
+                field.id = len(self.variables) + 1
+                self.variables.append(field)
+            for method in x.methods.values():
+                method.id = len(self.methods) + 1
+                self.methods.append(method)
+            for constructor in x.constructors.values():
+                constructor.id = len(self.constructors) + 1
+                self.constructors.append(constructor)
 
 class Node():
     def __init__(self):
@@ -19,7 +36,7 @@ class Class(Node):
     def addConstructor(self, cons):
         self.constructors.update({len(self.constructors) : cons})
     def addMethod(self, meth):
-        self.constructors.update({len(self.methods) : meth})
+        self.methods.update({len(self.methods) : meth})
     def addField(self, field):
         self.fields.update({len(self.fields) : field})
 
@@ -28,14 +45,13 @@ class Class(Node):
         print("Superclass Name: " + self.super_class_name)
         print("Fields:")
         for x in self.fields.values():
-            for y in x:
-                print(y)
+            print(x)
         print("Constructors:")
         for x in self.constructors.values():
-            print(x.__str__())
+            x.__str__()
         print("Methods:")
         for x in self.methods.values():
-            print(x.__str__())
+            x.__str__()
 
 
 class Constructor(Node):
@@ -46,9 +62,15 @@ class Constructor(Node):
         self.variable_table = {}
         self.body = []
     
-    def stringify(self):
-        print("CONSTRUCTOR: " + self.id + ", " + self.vis)
-        print("Constructor Parameters:")
+    def __str__(self):
+        print("CONSTRUCTOR: " + str(self.id) + ", " + self.visibility)
+        print("Constructor Parameters: ", end ="")
+        for x in self.parameters:
+            print(x, end = " ")
+        print()
+        print("Variable Table:")
+        print("Method Body:")
+        return ""
 
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret):
@@ -61,6 +83,16 @@ class Method(Node):
         self.return_type = ret
         self.variable_table = []
         self.body = []
+    
+    def __str__(self):
+        print("METHOD: " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibilty + ", " + self.applicability + ", " + self.return_type)
+        print("Method Parameters: ", end ="")
+        for x in self.parameters:
+            print(x, end = " ")
+        print()
+        print("Variable Table: ")
+        print("Method Body: ")
+        return ""
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
@@ -112,19 +144,23 @@ class For(Statement):
         self.loop_condition = cond
         self.update_expression = up
         self.body = bod
-    
+    def __str__(self):
+        return "FOR()"
 
 class Return(Statement):
     def __init__(self, line):
         super().__init__(line)
         self.value = None
+    def __str__(self):
+        return "RETURN()"
+        
 
 class Block(Statement):
     def __init__(self, line):
         super().__init__(line)
         self.expressions = []
     def __str__(self):
-        return
+        return "BLOCK()"
     
 class Break(Statement):
     def __init__(self, line):
@@ -148,6 +184,9 @@ class Expression(Node):
     def __init__(self, lin):
         self.lineNumber = lin
     
+    def __str__(self):
+
+    
 class ConstantExpression(Expression):
     def __init__(self, lin, typ, val):
         super().__init__(lin)
@@ -155,14 +194,14 @@ class ConstantExpression(Expression):
         self.value = val
 
     def __str__(self):
-        pass
+        return "ConstExpression()"
 
 class VarExpression(Expression):
     def __init__(self, lin, id):
         super().__init__(lin)
         self.id  = id
     def __str__(self):
-        pass
+        return "VarExpression()"
 
 class UnaryExpression(Expression):
     def __init__(self, lin, operand, operator):
@@ -171,7 +210,7 @@ class UnaryExpression(Expression):
         self.operator = operator
     
     def __str__(self):
-        pass
+        return "UnaryExpression()"
 
 class BinaryExpression(Expression):
     def __init__(self, lin, left, oper, right):
@@ -180,7 +219,7 @@ class BinaryExpression(Expression):
         self.operator = oper
         self.right_operand = right
     def __str__(self):
-        pass
+        return "BinExpression()"
 
 class AssignExpression(Expression):
     def __init__(self, lin, left, right):
@@ -188,7 +227,7 @@ class AssignExpression(Expression):
         self.left_expression = left
         self.right_expression = right
     def __str__(self):
-        pass
+        return "AssignExpression()"
 
 class AutoExpression(Expression):
     def __init__(self, lin , op, exp, pop):
@@ -197,7 +236,7 @@ class AutoExpression(Expression):
         self.expresiion = exp
         self.postOrPre = pop
     def __str__(self):
-        pass
+        return "AutoExpression()"
 
 class FieldAccessExpression(Expression):
     def __init__(self, lin, base, field):
@@ -205,7 +244,7 @@ class FieldAccessExpression(Expression):
         self.base = base
         self.fieldName = field
     def __str__(self):
-        pass 
+        return "FieldAccessExpression()"
 
 class MethodCallExpression(Expression):
     def __init__(self, lin, base, name):
@@ -214,14 +253,14 @@ class MethodCallExpression(Expression):
         self.methodName = name
         self.sequence = []
     def __str__(self):
-        pass
+        return "MethodCallExpression()"
 class NewObjectExpression(Expression):
     def __init__(self, lin, base):
         super().__init__(lin)
         self.paramaters = []
         self.baseClass = base
     def __str__(self):
-        pass
+        return "NewObjectExpression()"
 
 
 class ThisExpression(Expression):
@@ -229,14 +268,14 @@ class ThisExpression(Expression):
         super().__init__(lin)
         self.value = "this"
     def __str__(self):
-        return "This(this)"
+        return "This"
 
 class SuperExpression(Expression):
     def __init__(self, lin):
         super().__init__(lin)
         self.value = "super"
     def __str__(self):
-        return "Super(super)"
+        return "Super"
 
 class ClassReferenceExpression(Expression):
     def __init__(self, lin, ref):

@@ -39,7 +39,6 @@ def main():
     fh.close()
     result = parser.parse(source, lexer = lexer, debug = 0)
     # Parsing Successful
-    #print()
     print("YES")
     #print()
 

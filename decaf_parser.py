@@ -5,7 +5,6 @@ from decaf_lexer import *
 import decaf_ast as ast
 
 names = {}
-tree = ast.AST()
 precedence = (('right', 'ASSIGN'),
               ('left', 'OR'),
               ('left', 'AND'),
@@ -18,10 +17,9 @@ precedence = (('right', 'ASSIGN'),
 
 def p_program(p):
     'program : class_decl_list'
-    for x in p[1]:
-        x.print()
-        print("----------------------------------------")
-    return "YES"
+    ans = ast.AST(p[1])
+    ans.print()
+    return ans
 
 def p_class_decl_list(p):
     '''class_decl_list : class_decl class_decl_list
@@ -40,7 +38,13 @@ def p_class_decl(p):
     if p[3] == '{':
         p[0] = ast.Class(p[2], "")
         for x in p[4][0]:
+            x.containing_class = p[2]
             p[0].addField(x)
+        for x in p[4][2]:
+            p[0].addConstructor(x)
+        for x in p[4][1]:
+            x.containing_class = p[2]
+            p[0].addMethod(x)
     else:
         p[0] = ast.Class(p[2], p[4])
     pass
@@ -51,11 +55,22 @@ def p_class_body_decl_list(p):
         p[0] = [[],[],[]]
         if p[1][0] == "f":
             p[0][0].append(p[1][1])
+        elif p[1][0] == "m":
+            p[0][1].append(p[1][1])
+        elif p[1][0] == "c":
+            p[0][2].append(p[1][1])
     else:
         p[0] = [[],[],[]]
         if p[1][0] == "f":
             p[0][0].append(p[1][1])
-        p[0] = p[0] + p[2]
+        elif p[1][0] == "m":
+            p[0][1].append(p[1][1])
+        elif p[1][0] == "c":
+            p[0][2].append(p[1][1])
+        if p[2] is not None:
+            p[0][0] = p[0][0] + p[2][0] 
+            p[0][1] = p[0][1] + p[2][1] 
+            p[0][2] = p[0][2] + p[2][2]
 
 def p_class_body_decl_cont(p):
     '''class_body_decl_cont : class_body_decl class_body_decl_cont
@@ -66,15 +81,25 @@ def p_class_body_decl_cont(p):
         p[0] = [[],[],[]]
         if p[1][0] == "f":
             p[0][0].append(p[1][1])
+        elif p[1][0] == "c":
+            p[0][2].append(p[1][1])
+        elif p[1][0] == "m":
+            p[0][1].append(p[1][1])
         if p[2] is not None:
-            p[0] = p[0] + p[2]
+            p[0][0] = p[0][0] + p[2][0]
+            p[0][1] = p[0][1] + p[2][1]
+            p[0][2] = p[0][2] + p[2][2]
 
 def p_class_body_decl(p):
     '''class_body_decl : field_decl
                        | method_decl
                        | constructor_decl'''
     if isinstance(p[1], list) and isinstance(p[1][0], ast.Field):
-        p[0]= ["f", p[1]]
+        p[0]= ["f", p[1][0]]
+    elif isinstance(p[1], list) and isinstance(p[1][0], ast.Method):
+        p[0]= ["m", p[1][0]]
+    elif isinstance(p[1], list) and isinstance(p[1][0], ast.Constructor):
+        p[0]= ["c", p[1][0]]
 
 def p_field_decl(p):
     'field_decl : modifier var_decl'
@@ -111,7 +136,10 @@ def p_type(p):
             | TYPE_FLOAT
             | TYPE_BOOLEAN
             | ID'''
-    p[0] = p[1]
+    if p[1] == "int" or p[1] == "float" or p[1] == "boolean":    
+        p[0] = p[1]
+    else:
+        p[0] = "user(" + p[1] + ")"
     pass
 
 def p_variables(p):
@@ -132,43 +160,72 @@ def p_variables_cont(p):
 def p_variable(p):
     'variable : ID'
     p[0] = p[1]
-    pass
 
 def p_method_decl(p):
     '''method_decl : modifier type ID LEFT_PN formals RIGHT_PN block
                    | modifier TYPE_VOID ID LEFT_PN formals RIGHT_PN block'''
     if p[2] == 'void':
-        p[0] = ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void")
+        params = []
+        for x in p[5]:
+            params.append(ast.Variable(x[1], len(params), "formal", x[0]))
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void")]
+        p[0][0].parameters = [(x+1) for x in range(len(params))]
+        p[0][0].variable_table = params
     else:
-        p[0] = ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2])
+        params = []
+        for x in p[5]:
+            params.append(ast.Variable(x[1], len(params), "formal", x[0]))
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2])]
+        p[0][0].parameters = [(x+1) for x in range(len(params))]
+        p[0][0].variable_table = params
 
 def p_constructor_decl(p):
     'constructor_decl : modifier ID LEFT_PN formals RIGHT_PN block'
-
-    pass
+    p[0] = [ast.Constructor(0, p[1][0])]
+    params = []
+    for x in p[4]:
+        params.append(ast.Variable(x[1], len(params), "formal", x[0]))
+    p[0] = [ast.Constructor(0, p[1][0])]
+    p[0][0].parameters = [(x+1) for x in range(len(params))]
+    p[0][0].variable_table = params
+    
 
 def p_formals(p):
     '''formals : formal_param formals_cont
                | empty'''
-    pass
+    if p[1] == None:
+        p[0] = []
+    else:
+        p[0] = [p[1]] + p[2]
 
 def p_formals_cont(p):
     '''formals_cont : COMMA formal_param formals_cont
                     | empty'''
+    if p[1] == None:
+        p[0] = []
+    else:
+        p[0] = [p[2]] + p[3] 
+            
     pass
 
 def p_formal_param(p):
     'formal_param : type variable'
+    p[0] = [p[1], p[2]]
     pass
 
 def p_block(p):
     'block : LEFT_CB stmt_list RIGHT_CB'
+    p[0] = p[2]
     pass
 
 def p_stmt_list(p):
     '''stmt_list : stmt stmt_list
                  | empty'''
-    pass
+    if p[1] == None:
+        p[0] = []
+    else:
+        p[0] = [p[1]] + p[2]
+
 
 def p_stmt(p):
     '''stmt : IF LEFT_PN expr RIGHT_PN stmt 
@@ -182,22 +239,40 @@ def p_stmt(p):
             | block
             | var_decl
             | SEMI_COLON'''
-    pass
+    if p[1] == 'break':
+        p[0] = ast.Break(p.lineno)
+    elif p[1] == 'continue':
+        p[0] = ast.Continue(p.lineno)
+    elif p[1] == ';':
+        p[0] = ast.Skip(p.lineno)
+    elif p[1] = 'while':
+        pass
+    elif p[1] = 'for':
+        pass
 
 def p_for_cond1(p):
     '''for_cond1 : stmt_expr
                  | empty'''
-    pass
+    if p[1] = None:
+        p[0] = []
+    else:
+        p[0] = [p[1]]
 
 def p_for_cond2(p):
     '''for_cond2 : expr
                  | empty'''
-    pass
+    if p[1] = None:
+        p[0] = []
+    else:
+        p[0] = [p[1]]
 
 def p_for_cond3(p):
     '''for_cond3 : stmt_expr
                  | empty'''
-    pass
+    if p[1] = None:
+        p[0] = []
+    else:
+        p[0] = [p[1]]
 
 def p_return_val(p):
     '''return_val : expr
