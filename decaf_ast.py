@@ -185,6 +185,7 @@ class Expression(Node):
         self.lineNumber = lin
     
     def __str__(self):
+        pass
 
     
 class ConstantExpression(Expression):
@@ -197,7 +198,7 @@ class ConstantExpression(Expression):
         return "ConstExpression()"
 
 class VarExpression(Expression):
-    def __init__(self, lin, id):
+    def __init__(self, lin, id, val):
         super().__init__(lin)
         self.id  = id
     def __str__(self):
@@ -247,11 +248,11 @@ class FieldAccessExpression(Expression):
         return "FieldAccessExpression()"
 
 class MethodCallExpression(Expression):
-    def __init__(self, lin, base, name):
+    def __init__(self, lin, base, name, args):
         super().__init__(lin)
         self.base = base
         self.methodName = name
-        self.sequence = []
+        self.arguments = args
     def __str__(self):
         return "MethodCallExpression()"
 class NewObjectExpression(Expression):

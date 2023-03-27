@@ -245,15 +245,15 @@ def p_stmt(p):
         p[0] = ast.Continue(p.lineno)
     elif p[1] == ';':
         p[0] = ast.Skip(p.lineno)
-    elif p[1] = 'while':
+    elif p[1] == 'while':
         pass
-    elif p[1] = 'for':
+    elif p[1] == 'for':
         pass
 
 def p_for_cond1(p):
     '''for_cond1 : stmt_expr
                  | empty'''
-    if p[1] = None:
+    if p[1] == None:
         p[0] = []
     else:
         p[0] = [p[1]]
@@ -261,7 +261,7 @@ def p_for_cond1(p):
 def p_for_cond2(p):
     '''for_cond2 : expr
                  | empty'''
-    if p[1] = None:
+    if p[1] == None:
         p[0] = []
     else:
         p[0] = [p[1]]
@@ -269,7 +269,7 @@ def p_for_cond2(p):
 def p_for_cond3(p):
     '''for_cond3 : stmt_expr
                  | empty'''
-    if p[1] = None:
+    if p[1] == None:
         p[0] = []
     else:
         p[0] = [p[1]]
@@ -286,6 +286,18 @@ def p_literal(p):
                | NULL
                | TRUE
                | FALSE'''
+    if p[1] == 'null':
+        p[0] = ast.ConstantExpression(p.lineno, "null", "null")
+    elif p[1] == "true":
+        p[0] = ast.ConstantExpression(p.lineno, "boolean", "true")
+    elif p[1] == "false":
+        p[0] = ast.ConstantExpression(p.lineno, "boolean", "false")
+    elif isinstance(p[1], int):
+        p[0] = ast.ConstantExpression(p.lineno, "int", int(p[1]))
+    elif isinstance(p[1], float):
+        p[0] = ast.ConstantExpression(p.lineno, "float", float(p[1]))
+    else:
+        p[0] = ast.ConstantExpression(p.lineno, "string", p[1][1:-1])
     pass
 
 def p_primary(p):
@@ -310,21 +322,25 @@ def p_arguments_cont(p):
 
 def p_lhs(p):
     'lhs : field_access'
-    pass
+    p[0] = p[1]
 
 def p_field_access(p):
     '''field_access : primary DOT ID
                     | ID'''
-    pass
+    if len(p) > 2:
+        p[0] = ast.FieldAccessExpression(p.lineno, p[1], p[3])
+    else:
+        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression, p[1])
+
 
 def p_method_invocation(p):
     'method_invocation : field_access LEFT_PN arguments RIGHT_PN'
-    pass
+    p[0] =  ast.MethodCallExpression(p.lineno, p[1].base, p[1].fieldName, p[3])
 
 def p_expr(p):
     '''expr : primary
             | assign'''
-    pass
+    p[0] = p[1]
     
 #def p_expr(p):
 #   '''expr : primary
@@ -340,8 +356,16 @@ def p_assign(p):
               | INCREMENT lhs
               | lhs DECREMENT
               | DECREMENT lhs'''
-    pass
-
+    if p[2] == '=':
+        p[0] = ast.AssignExpression(p.lineno, p[1], p[3])
+    elif p[2] == '++':
+        p[0] = ast.AutoExpression(p.lineno,'+', p[1],"post")
+    elif p[2] == '--':
+        p[0] = ast.AutoExpression(p.lineno,'-', p[1],"post")
+    elif p[1] == '++':
+        p[0] = ast.AutoExpression(p.lineno,'+', p[1],"pre")
+    elif p[1] == '--':  
+        p[0] = ast.AutoExpression(p.lineno,'-', p[1],"pre")
 #def p_assign(p):
 #    '''assign : lhs ASSIGN expr
 #              | lhs PLUS PLUS
@@ -352,63 +376,63 @@ def p_assign(p):
 
 def p_add_expr(p):
     'expr : expr PLUS expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno, p[1], p[2], p[3])
 
 def p_sub_expr(p):
     'expr : expr MINUS expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_mult_exp(p):
     'expr : expr STAR expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_div_expr(p):
     'expr : expr F_SLASH expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_conj_expr(p):
     'expr : expr AND expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_disj_expr(p):
     'expr : expr OR expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_equals_expr(p):
     'expr : expr EQ expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_notequals_expr(p):
     'expr : expr NOT_EQ expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_lt_expr(p):
     'expr : expr LT expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_lte_expr(p):
     'expr : expr LTE expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_gt_expr(p):
     'expr : expr GT expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_gte_expr(p):
     'expr : expr GTE expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_pos_expr(p):
     'expr : PLUS expr %prec UPLUS'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_minus_expr(p):
     'expr : MINUS expr %prec UMINUS'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 def p_not_expr(p):
     'expr : NOT expr'
-    pass
+    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
 
 #def p_arith_op(p):
 #    '''arith_op : PLUS
@@ -437,7 +461,7 @@ def p_not_expr(p):
 def p_stmt_expr(p):
     '''stmt_expr : assign
                  | method_invocation'''
-    pass
+    p[0] = p[1]
 
 def p_empty(p):
     'empty :'
