@@ -148,9 +148,9 @@ class For(Statement):
         return "FOR()"
 
 class Return(Statement):
-    def __init__(self, line):
+    def __init__(self, line, val):
         super().__init__(line)
-        self.value = None
+        self.value = val
     def __str__(self):
         return "RETURN()"
         
@@ -256,9 +256,9 @@ class MethodCallExpression(Expression):
     def __str__(self):
         return "MethodCallExpression()"
 class NewObjectExpression(Expression):
-    def __init__(self, lin, base):
+    def __init__(self, lin, base, args):
         super().__init__(lin)
-        self.paramaters = []
+        self.paramaters = args
         self.baseClass = base
     def __str__(self):
         return "NewObjectExpression()"

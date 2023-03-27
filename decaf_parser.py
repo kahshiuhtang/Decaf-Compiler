@@ -249,6 +249,10 @@ def p_stmt(p):
         pass
     elif p[1] == 'for':
         pass
+    elif p[1] == 'if':
+        pass
+    else:
+        p[0] = p[1]
 
 def p_for_cond1(p):
     '''for_cond1 : stmt_expr
@@ -277,7 +281,10 @@ def p_for_cond3(p):
 def p_return_val(p):
     '''return_val : expr
                   | empty'''
-    pass
+    if p[1] == None:
+        p[0] =  ast.Return(p.lineno, "None")
+    else:
+        p[0] =  ast.Return(p.lineno, p[1])
 
 def p_literal(p):
     '''literal : INT_CONST
@@ -308,17 +315,33 @@ def p_primary(p):
                | NEW ID LEFT_PN arguments RIGHT_PN
                | lhs
                | method_invocation'''
-    pass
+    if p[1] == 'this':
+        p[0] = ast.ThisExpression(p.lineno)
+    elif p[1] == 'super':
+        p[0] = ast.SuperExpression(p.lineno)
+    elif p[1] == 'new':
+        p[0] = ast.NewObjectExpression(p.lineno, p[2], p[4])
+    elif p[1] == '(':
+        p[0] = p[2]
+    else:
+        p[0] = p[1]
+
 
 def p_arguments(p):
     '''arguments : expr arguments_cont
                  | empty'''
-    pass
+    if p[1] == None:
+        p[0] = []
+    else:
+        p[0] = [p[1]] + p[2]
 
 def p_arguments_cont(p):
     '''arguments_cont : COMMA expr arguments_cont
                       | empty'''
-    pass
+    if p[1] == None:
+        p[0] = []
+    else:
+        p[0] = p[2] + p[3]
 
 def p_lhs(p):
     'lhs : field_access'
@@ -330,7 +353,7 @@ def p_field_access(p):
     if len(p) > 2:
         p[0] = ast.FieldAccessExpression(p.lineno, p[1], p[3])
     else:
-        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression, p[1])
+        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression, p[1]) # IS THIS CORRECT?
 
 
 def p_method_invocation(p):
