@@ -171,6 +171,8 @@ def p_method_decl(p):
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void")]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
+        p[0][0].body = p[7]
+        p[0][0].setup()
     else:
         params = []
         for x in p[5]:
@@ -178,6 +180,8 @@ def p_method_decl(p):
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2])]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
+        p[0][0].body = p[7]
+        p[0][0].setup()
 
 def p_constructor_decl(p):
     'constructor_decl : modifier ID LEFT_PN formals RIGHT_PN block'
@@ -188,6 +192,7 @@ def p_constructor_decl(p):
     p[0] = [ast.Constructor(0, p[1][0])]
     p[0][0].parameters = [(x+1) for x in range(len(params))]
     p[0][0].variable_table = params
+    p[0][0].body = p[6]
     
 
 def p_formals(p):
@@ -246,11 +251,16 @@ def p_stmt(p):
     elif p[1] == ';':
         p[0] = ast.Skip(p.lineno)
     elif p[1] == 'while':
-        pass
+        p[0] = ast.While(p.lineno, p[3], p[5])
     elif p[1] == 'for':
-        pass
+        p[0] = ast.For(p.lineno, p[3], p[5], p[7], p[9])
     elif p[1] == 'if':
-        pass
+        if len(p) == 6:
+            p[0] = ast.If(p.lineno, p[3], p[5], None)
+        elif len(p) == 8:
+            p[0] = ast.If(p.lineno, p[3], p[5], p[7])
+    elif p[1] == 'return':
+        p[0] = p[2]
     else:
         p[0] = p[1]
 
@@ -283,6 +293,8 @@ def p_return_val(p):
                   | empty'''
     if p[1] == None:
         p[0] =  ast.Return(p.lineno, "None")
+    elif p[1] == "return":
+        p[0] = ast.Return(p.lineno, "None")
     else:
         p[0] =  ast.Return(p.lineno, p[1])
 
@@ -353,7 +365,7 @@ def p_field_access(p):
     if len(p) > 2:
         p[0] = ast.FieldAccessExpression(p.lineno, p[1], p[3])
     else:
-        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression, p[1]) # IS THIS CORRECT?
+        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression(p.lineno), p[1]) # IS THIS CORRECT?
 
 
 def p_method_invocation(p):

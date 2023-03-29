@@ -70,6 +70,8 @@ class Constructor(Node):
         print()
         print("Variable Table:")
         print("Method Body:")
+        for x in self.body:
+            print(x.__str__())
         return ""
 
 class Method(Node):
@@ -91,8 +93,26 @@ class Method(Node):
             print(x, end = " ")
         print()
         print("Variable Table: ")
+        for x in self.variable_table:
+            print(x.__str__())
         print("Method Body: ")
+        for x in self.body:
+            print(x.__str__())
         return ""
+    
+    def setup(self):
+        for i in range(len(self.body)):
+            if isinstance(self.body[i], list):
+                if self.body[i][0] == "int":
+                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], 0))
+                elif self.body[i][0] == "string":
+                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], ""))
+                elif self.body[i][0] == "float":
+                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "0.0"))
+                elif self.body[i][0] == "boolean":
+                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
+                else:
+                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
@@ -112,10 +132,16 @@ class Variable(Node):
         self.id = _id
         self.kind = kind
         self.type = typ
+    
+    def __str__(self):
+        return "Variable(" + self.name +", " + str(self.id) +", " + self.kind + ", " + self.type + ")"
 
 class Type(Node):
     def __init__(self, typ):
         self.type = typ
+
+    def __str__(self):
+        return self.typ
 
 class Statement(Node):
     def __init__(self, line):
@@ -131,11 +157,24 @@ class If(Statement):
         self.then_part = then_part
         self.else_part = else_part
 
+    def __str__(self):
+        block = self.then_part.__str__()
+        if isinstance(self.then_part, list):
+            for x in self.then_part:
+                block += x.__str__() + ","
+            block = block[:-1]
+        if self.else_part == None:
+            return  "If(" + self.condition.__str__() + ", " + self.then_part.__str__() +  ")"
+        return "If(" + self.condition.__str__() + ", " + self.then_part.__str__() + ", " + self.else_part.__str__() +  ")"
+
 class While(Statement):
     def __init__(self, line, cond, body):
         super().__init__(line)
         self.condition = cond
         self.body = body
+    
+    def __str__(self):
+        return "While(" + self.condition.__str__() + ")"
 
 class For(Statement):
     def __init__(self, line, init, cond, up, bod):
@@ -145,14 +184,41 @@ class For(Statement):
         self.update_expression = up
         self.body = bod
     def __str__(self):
-        return "FOR()"
+        ans = ""
+        i = self.initialize.__str__()
+        l = self.loop_condition.__str__()
+        u = self.update_expression.__str__()
+        if isinstance(self.initialize, list):
+            i = ""
+            for x in self.initialize:
+                i += x.__str__() + ","
+            i = i[:-1]
+        if isinstance(self.loop_condition, list):
+            l = ""
+            for x in self.loop_condition:
+                l += x.__str__() + ","
+            l = l[:-1]
+        if isinstance(self.update_expression, list):
+            u = ""
+            for x in self.update_expression:
+                u += x.__str__() + ","
+            u = u[:-1]
+        if isinstance(self.body, list):
+            for x in self.body:
+                ans += x.__str__() + ","
+            ans = ans[:-1]
+        else:
+            ans = self.body.__str__()
+        return "FOR(" + i + ", " + l + ", " + u + ", " + ans + ")"
 
 class Return(Statement):
     def __init__(self, line, val):
         super().__init__(line)
         self.value = val
     def __str__(self):
-        return "RETURN()"
+        if self.value == None:
+            return "Return()"
+        return "Return(" + self.value.__str__() + ")"
         
 
 class Block(Statement):
@@ -160,7 +226,11 @@ class Block(Statement):
         super().__init__(line)
         self.expressions = []
     def __str__(self):
-        return "BLOCK()"
+        ans = ""
+        for x in self.expressions:
+            ans += x.__str__() + ","
+        ans = ans[:-1]
+        return "BLOCK(" + ans + ")"
     
 class Break(Statement):
     def __init__(self, line):
@@ -195,14 +265,14 @@ class ConstantExpression(Expression):
         self.value = val
 
     def __str__(self):
-        return "ConstExpression()"
+        return "ConstExpression(" + self.type.__str__() + ", " + self.value.__str__() + ")"
 
 class VarExpression(Expression):
     def __init__(self, lin, id, val):
         super().__init__(lin)
         self.id  = id
     def __str__(self):
-        return "VarExpression()"
+        return "VarExpression(" + self.id.__str__() + ", " + self.val.__str__() + ")"
 
 class UnaryExpression(Expression):
     def __init__(self, lin, operand, operator):
@@ -211,7 +281,7 @@ class UnaryExpression(Expression):
         self.operator = operator
     
     def __str__(self):
-        return "UnaryExpression()"
+        return "UnaryExpression( " + self.operand.__str__() + ", " + self.operator.__str__() + ")"
 
 class BinaryExpression(Expression):
     def __init__(self, lin, left, oper, right):
@@ -219,8 +289,9 @@ class BinaryExpression(Expression):
         self.left_operand = left
         self.operator = oper
         self.right_operand = right
+
     def __str__(self):
-        return "BinExpression()"
+        return "BinExpression(" + self.left_operand.__str__() + ", " + str(self.operator) + ", " + self.right_operand.__str__() + ")"
 
 class AssignExpression(Expression):
     def __init__(self, lin, left, right):
@@ -228,16 +299,16 @@ class AssignExpression(Expression):
         self.left_expression = left
         self.right_expression = right
     def __str__(self):
-        return "AssignExpression()"
+        return "AssignExpression(" + self.left_expression.__str__() + ", " + self.right_expression.__str__() + ")"
 
 class AutoExpression(Expression):
     def __init__(self, lin , op, exp, pop):
         super().__init__(lin)
         self.operand = op
-        self.expresiion = exp
+        self.expresion = exp
         self.postOrPre = pop
     def __str__(self):
-        return "AutoExpression()"
+        return "AutoExpression(" + self.op.__str__() + ", " + self.expression.__str__() + ", " + self.postOrPre.__str__() + ")"
 
 class FieldAccessExpression(Expression):
     def __init__(self, lin, base, field):
@@ -245,7 +316,7 @@ class FieldAccessExpression(Expression):
         self.base = base
         self.fieldName = field
     def __str__(self):
-        return "FieldAccessExpression()"
+        return "FieldAccessExpression(" + self.base.__str__() + ", " + self.fieldName.__str__() + ")"
 
 class MethodCallExpression(Expression):
     def __init__(self, lin, base, name, args):
@@ -267,9 +338,9 @@ class NewObjectExpression(Expression):
 class ThisExpression(Expression):
     def __init__(self, lin):
         super().__init__(lin)
-        self.value = "this"
+
     def __str__(self):
-        return "This"
+        return "This()"
 
 class SuperExpression(Expression):
     def __init__(self, lin):
