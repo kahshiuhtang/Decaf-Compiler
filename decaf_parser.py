@@ -154,8 +154,10 @@ def p_variables_cont(p):
                       | empty'''
     if len(p) == 2:
         p[0] = []
+    elif isinstance(p[2], str):
+        p[0] = [p[2]] +p[3]
     else:
-        p[0] = p[2] + p[3]
+        p[0] = [p[1]]
 
 def p_variable(p):
     'variable : ID'

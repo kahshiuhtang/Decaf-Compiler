@@ -8,7 +8,7 @@ class IntList{
 		
 	}
 	public static IntList create_list(int v) {
-		IntList new_element;
+		IntList new_element, old_element;
 		new_element = new IntList();
 		new_element.value = v;
 		new_element.next = null;

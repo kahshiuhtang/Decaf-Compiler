@@ -101,6 +101,7 @@ class Method(Node):
         return ""
     
     def setup(self):
+        names = {}
         for i in range(len(self.body)):
             if isinstance(self.body[i], list):
                 if self.body[i][0] == "int":
@@ -113,6 +114,9 @@ class Method(Node):
                     self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
                 else:
                     self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
+        for i in range(len(self.body)):
+            if isinstance(self.body[i], AssignExpression):
+                print(self.body[i].left_expression.fieldName)
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
@@ -316,6 +320,12 @@ class FieldAccessExpression(Expression):
         self.base = base
         self.fieldName = field
     def __str__(self):
+        if isinstance(self.fieldName, list):
+            name = ""
+            for x in self.fieldName:
+                name += x + ", "
+            name = name[:-1]
+            return "FieldAccessExpression(" + self.base.__str__() + ", " +  name + ")"
         return "FieldAccessExpression(" + self.base.__str__() + ", " + self.fieldName.__str__() + ")"
 
 class MethodCallExpression(Expression):
@@ -325,7 +335,13 @@ class MethodCallExpression(Expression):
         self.methodName = name
         self.arguments = args
     def __str__(self):
-        return "MethodCallExpression()"
+        arguments = self.arguments
+        if isinstance(self.arguments, list):
+            arguments = ""
+            for x in self.arguments:
+                arguments += x.__str__()
+
+        return "MethodCallExpression(" + self.base.__str__() + ", " + self.methodName.__str__() + ", "+ arguments +")"
 class NewObjectExpression(Expression):
     def __init__(self, lin, base, args):
         super().__init__(lin)
