@@ -104,6 +104,7 @@ def p_class_body_decl(p):
 def p_field_decl(p):
     'field_decl : modifier var_decl'
     ans = []
+    print(p[2][1])
     for x in p[2][1]:
         ans.append(ast.Field(x, 0, "", p[1][0], p[1][1], p[2][0]))
     p[0] = ans

@@ -20,6 +20,35 @@ class AST():
             for constructor in x.constructors.values():
                 constructor.id = len(self.constructors) + 1
                 self.constructors.append(constructor)
+        self.setup_selfdefined()
+    
+    def setup_selfdefined(self):
+        inclass = Class("in", "")
+        outclass = Class("in", "")
+        scan_int = Method("scan_int", len(self.methods) + 1, "In", "public", "static", [], "int")
+        self.methods.append(scan_int)
+        inclass.addMethod(scan_int);
+        scan_float = Method("scan_float", len(self.methods) + 1, "In", "public", "static", [], "float");
+        self.methods.append(scan_float)
+        inclass.addMethod(scan_float)
+        printi = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # int i
+        printi.variable_table = [Variable("i", 1, "formal", "int")]
+        outclass.addMethod(printi)
+        self.methods.append(printi)
+        printf = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # float f
+        printf.variable_table = [Variable("f", 1, "formal", "float")]
+        outclass.addMethod(printf)
+        self.methods.append(printf)
+        printb = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # boolean b
+        printb.variable_table = [Variable("b", 1, "formal", "boolean")]
+        outclass.addMethod(printb)
+        self.methods.append(printb)
+        prints = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # string s
+        prints.variable_table = [Variable("s", 1, "formal", "string")]
+        outclass.addMethod(prints)
+        self.methods.append(prints)
+        self.classes.append(inclass)
+        self.classes.append(outclass)
 
 class Node():
     def __init__(self):
@@ -104,19 +133,9 @@ class Method(Node):
         names = {}
         for i in range(len(self.body)):
             if isinstance(self.body[i], list):
-                if self.body[i][0] == "int":
-                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], 0))
-                elif self.body[i][0] == "string":
-                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], ""))
-                elif self.body[i][0] == "float":
-                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "0.0"))
-                elif self.body[i][0] == "boolean":
-                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
-                else:
-                    self.body[i] = AssignExpression(0, FieldAccessExpression(-1, self.body[i][0], self.body[i][1]), ConstantExpression(-1, self.body[i][0], "null"))
-        for i in range(len(self.body)):
-            if isinstance(self.body[i], AssignExpression):
-                print(self.body[i].left_expression.fieldName)
+                for x in self.body[i][1]:
+                    self.variable_table.append(Variable(self.body[i][0], len(self.variable_table) + 1, "local", x))
+        self.body = [x for x in self.body if type(x)!=list]
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
