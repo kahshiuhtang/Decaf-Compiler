@@ -128,13 +128,13 @@ class Method(Node):
         print(self.body.__str__())
         return ""
     
-    def setup(self, bod):
+    def setup(self):
         names = {}
-        for i in range(len(self.body)):
-            if isinstance(self.body[i], list):
-                for x in self.body[i][1]:
-                    self.variable_table.append(Variable(self.body[i][0], len(self.variable_table) + 1, "local", x))
-        self.body = [x for x in self.body if type(x)!=list]
+        for i in range(len(self.body.expressions)):
+            if isinstance(self.body.expressions[i], list):
+                for x in self.body.expressions[i][1]:
+                    self.variable_table.append(Variable(self.body.expressions[i][0], len(self.variable_table) + 1, "local", x))
+        self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
