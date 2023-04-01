@@ -171,19 +171,17 @@ def p_method_decl(p):
         params = []
         for x in p[5]:
             params.append(ast.Variable(x[1], len(params), "formal", x[0]))
-        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void")]
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void", ast.Block(p.lineno, p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
-        p[0][0].body = p[7]
         p[0][0].setup()
     else:
         params = []
         for x in p[5]:
             params.append(ast.Variable(x[1], len(params), "formal", x[0]))
-        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2])]
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2],ast.Block(p.lineno, p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
-        p[0][0].body = p[7]
         p[0][0].setup()
 
 def p_constructor_decl(p):

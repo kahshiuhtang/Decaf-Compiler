@@ -25,25 +25,25 @@ class AST():
     def setup_selfdefined(self):
         inclass = Class("in", "")
         outclass = Class("in", "")
-        scan_int = Method("scan_int", len(self.methods) + 1, "In", "public", "static", [], "int")
+        scan_int = Method("scan_int", len(self.methods) + 1, "In", "public", "static", [], "int", Block(-1, []))
         self.methods.append(scan_int)
         inclass.addMethod(scan_int);
-        scan_float = Method("scan_float", len(self.methods) + 1, "In", "public", "static", [], "float");
+        scan_float = Method("scan_float", len(self.methods) + 1, "In", "public", "static", [], "float", Block(-1, []));
         self.methods.append(scan_float)
         inclass.addMethod(scan_float)
-        printi = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # int i
+        printi = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # int i
         printi.variable_table = [Variable("i", 1, "formal", "int")]
         outclass.addMethod(printi)
         self.methods.append(printi)
-        printf = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # float f
+        printf = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # float f
         printf.variable_table = [Variable("f", 1, "formal", "float")]
         outclass.addMethod(printf)
         self.methods.append(printf)
-        printb = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # boolean b
+        printb = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # boolean b
         printb.variable_table = [Variable("b", 1, "formal", "boolean")]
         outclass.addMethod(printb)
         self.methods.append(printb)
-        prints = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void"); # string s
+        prints = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # string s
         prints.variable_table = [Variable("s", 1, "formal", "string")]
         outclass.addMethod(prints)
         self.methods.append(prints)
@@ -104,7 +104,7 @@ class Constructor(Node):
         return ""
 
 class Method(Node):
-    def __init__(self, name, _id, cont, vis, appl, params, ret):
+    def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
         self.name = name
         self.id = _id
         self.containing_class = cont
@@ -113,7 +113,7 @@ class Method(Node):
         self.parameters = params
         self.return_type = ret
         self.variable_table = []
-        self.body = []
+        self.body = bod
     
     def __str__(self):
         print("METHOD: " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibilty + ", " + self.applicability + ", " + self.return_type)
@@ -125,11 +125,10 @@ class Method(Node):
         for x in self.variable_table:
             print(x.__str__())
         print("Method Body: ")
-        for x in self.body:
-            print(x.__str__())
+        print(self.body.__str__())
         return ""
     
-    def setup(self):
+    def setup(self, bod):
         names = {}
         for i in range(len(self.body)):
             if isinstance(self.body[i], list):
@@ -245,9 +244,9 @@ class Return(Statement):
         
 
 class Block(Statement):
-    def __init__(self, line):
+    def __init__(self, line, expressions):
         super().__init__(line)
-        self.expressions = []
+        self.expressions = expressions
     def __str__(self):
         ans = ""
         for x in self.expressions:
@@ -259,19 +258,19 @@ class Break(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "BREAK"
+        return "BREAK()"
 
 class Continue(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "CONTINUE"
+        return "CONTINUE()"
 
 class Skip(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "SKIP"
+        return "SKIP()"
 
 class Expression(Node):
     def __init__(self, lin):
@@ -310,12 +309,37 @@ class BinaryExpression(Expression):
     def __init__(self, lin, left, oper, right):
         super().__init__(lin)
         self.left_operand = left
-        self.operator = oper
+        self.operator = self.fix(oper)
         self.right_operand = right
 
     def __str__(self):
-        return "BinExpression(" + self.left_operand.__str__() + ", " + str(self.operator) + ", " + self.right_operand.__str__() + ")"
+        return "Binary(" + self.left_operand.__str__() + ", " + str(self.operator) + ", " + self.right_operand.__str__() + ")"
 
+    def fix(self, oper):
+        if oper == "+":
+            return "add"
+        elif oper == "-":
+            return "min"
+        elif oper == "/":
+            return "div"
+        elif oper == "*":
+            return "mul"
+        elif oper == "||":
+            return "or"
+        elif oper == "&&":
+            return "and"
+        elif oper == "==":
+            return "eq"
+        elif oper == "!=":
+            return "neq"
+        elif oper == "<":
+            return "lt"
+        elif oper == ">":
+            return ">"
+        elif oper == "<=":
+            return "leq"
+        elif oper == ">=":
+            return "geq"
 class AssignExpression(Expression):
     def __init__(self, lin, left, right):
         super().__init__(lin)
