@@ -65,6 +65,7 @@ class AST():
 class Node():
     def __init__(self):
         self.parent = None
+        self.child = []
 
 class Class(Node):
     def __init__(self, name, super_class):
@@ -142,7 +143,7 @@ class Constructor(Node):
             if isinstance(self.body.expressions[i], list):
                 for x in self.body.expressions[i][1]:
                     self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", self.body.expressions[i][0]))
-        self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
+        # self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], Block):
                 self.addVarTable(block)
@@ -163,7 +164,7 @@ class Constructor(Node):
             if isinstance(block.expressions[i], list):
                 for x in block.expressions[i][1]:
                     self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0]))
-        block.expressions = [x for x in block.expressions if type(x)!=list]
+        # block.expressions = [x for x in block.expressions if type(x)!=list]
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
         self.name = name
@@ -195,7 +196,7 @@ class Method(Node):
             if isinstance(self.body.expressions[i], list):
                 for x in self.body.expressions[i][1]:
                     self.variable_table.append(Variable(self.body.expressions[i][0], len(self.variable_table) + 1, "local", x))
-        self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
+        # self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], Block):
                 self.addVarTable(block)
@@ -216,8 +217,22 @@ class Method(Node):
             if isinstance(block.expressions[i], list):
                 for x in block.expressions[i][1]:
                     self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0]))
-        block.expressions = [x for x in block.expressions if type(x)!=list]
-    
+        # block.expressions = [x for x in block.expressions if type(x)!=list]
+    def fill(self, block):
+        for line in block.expressions:
+            if isinstance(line, If):
+                pass
+            elif isinstance(line, While):
+                pass
+            elif isinstance(line, For):
+                pass
+            elif isinstance(line, Expression):
+                pass
+            elif isinstance(line, Block):
+                pass
+            elif isinstance(line, Return):
+                pass
+
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
         self.name = name
@@ -331,7 +346,8 @@ class Block(Statement):
             return "Block([])"
         ans = ""
         for x in self.expressions:
-            ans += x.__str__() + ",\n"
+            if not isinstance(x, list):
+                ans += x.__str__() + ",\n"
         ans = ans[:-2]
         return "Block([\n" + ans + "])"
     
@@ -356,7 +372,6 @@ class Skip(Statement):
 class Expression(Node):
     def __init__(self, lin):
         self.lineNumber = lin
-    
     def __str__(self):
         pass
 
