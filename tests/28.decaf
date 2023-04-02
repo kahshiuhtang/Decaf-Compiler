@@ -39,14 +39,11 @@ class IntList{
 		IntList x;
 		x = this;
 		for(;x.value != v && x.next != null; x = x.next);
-		int y;
-		float g;
-		g = 1000.0;
 		return x;
 	}
 	public int length() {
-		if (next == null)  return 1;
-		else  return 1 + next.length();
+		if (this.next == null)  return 1;
+		else  return 1 + this.next.length();
 	}
 }
 

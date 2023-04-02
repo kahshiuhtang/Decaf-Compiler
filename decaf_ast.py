@@ -195,43 +195,110 @@ class Method(Node):
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], list):
                 for x in self.body.expressions[i][1]:
-                    self.variable_table.append(Variable(self.body.expressions[i][0], len(self.variable_table) + 1, "local", x))
-        # self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
+                    self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", self.body.expressions[i][0]))
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], Block):
                 self.addVarTable(block)
             elif isinstance(self.body.expressions[i], While):
+                self.searchExpression(self.body.expressions[i].condition)
                 self.addVarTable(self.body.expressions[i].body)
             elif isinstance(self.body.expressions[i], For):
+                self.searchExpression(self.body.expressions[i].initialize)
+                self.searchExpression(self.body.expressions[i].loop_condition)
+                self.searchExpression(self.body.expressions[i].update_expression)
                 self.addVarTable(self.body.expressions[i].body)
             elif isinstance(self.body.expressions[i], If):
+                self.searchExpression(self.body.expressions[i].condition)
                 if self.body.expressions[i].else_part == None:
                     self.addVarTable(self.body.expressions[i].then_part)
                 else:
                     self.addVarTable(self.body.expressions[i].then_part)
                     self.addVarTable(self.body.expressions[i].else_part)
+            elif isinstance(self.body.expressions[i], Expression):
+                self.searchExpression(self.body.expressions[i])
     def addVarTable(self, block):
         if not isinstance(block, Block) or not isinstance(block.expressions, list):
+            if isinstance(block, Expression):
+                self.searchExpression(block)
             return
         for i in range(len(block.expressions)):
             if isinstance(block.expressions[i], list):
                 for x in block.expressions[i][1]:
                     self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0]))
-        # block.expressions = [x for x in block.expressions if type(x)!=list]
+            elif isinstance(block.expressions[i], Block):
+                self.addVarTable(block.expressions[i])
+                self.fill(block.expressions[i])
+            elif isinstance(block.expressions[i], While):
+                self.addVarTable(block.expressions[i].body)
+                self.fill(block.expressions[i].body)
+            elif isinstance(block.expressions[i], For):
+                self.addVarTable(block.expressions[i].body)
+                self.fill(block.expressions[i].body)
+            elif isinstance(block.expressions[i], If):
+                if block.expressions[i].else_part == None:
+                    self.addVarTable(block.expressions[i].then_part)
+                    self.fill(block.expressions[i].then_part)
+                else:
+                    self.addVarTable(block.expressions[i].then_part)
+                    self.fill(block.expressions[i].then_part)
+                    self.addVarTable(block.expressions[i].else_part)
+                    self.fill(block.expressions[i].else_part)
+            elif isinstance(block.expressions[i], Expression):
+                self.searchExpression(block.expressions[i])
+            elif isinstance(block.expressions[i], Return):
+                self.searchExpression(block.expressions[i].value)
     def fill(self, block):
+        if not isinstance(block, Block):
+            return
         for line in block.expressions:
             if isinstance(line, If):
-                pass
+                self.searchExpression(line.condition)
             elif isinstance(line, While):
-                pass
+                self.searchExpression(line.condition)
             elif isinstance(line, For):
-                pass
+                self.searchExpression(line.initialize)
+                self.searchExpression(line.loop_condition)
+                self.searchExpression(line.update_expression)
             elif isinstance(line, Expression):
-                pass
+                self.searchExpression(line)
             elif isinstance(line, Block):
-                pass
+                self.fill(line)
             elif isinstance(line, Return):
-                pass
+                self.searchExpression(line.value)
+
+    def searchExpression(self, expr):
+        if isinstance(expr, list):
+            for x in expr:
+                self.searchExpression(x)
+            return
+        if isinstance(expr, VarExpression):
+            for elem in reversed(self.variable_table):
+                if elem.name == expr.val:
+                    expr.id = elem.id
+                    return
+            print("Error: Unfound Reference in " + self.name +  " method: Variable" + elem.name)
+            sys.exit()
+        elif isinstance(expr, UnaryExpression):
+            self.searchExpression(expr.operand)
+            self.searchExpression(expr.operator)
+        elif isinstance(expr, BinaryExpression):
+            self.searchExpression(expr.left_operand)
+            self.searchExpression(expr.right_operand)
+        elif isinstance(expr, AssignExpression):
+            self.searchExpression(expr.left_expression)
+            self.searchExpression(expr.right_expression)
+        elif isinstance(expr, AutoExpression):
+            self.searchExpression(expr.expression)
+        elif isinstance (expr, FieldAccessExpression):
+            self.searchExpression(expr.base)
+        elif isinstance(expr, MethodCallExpression):
+            self.searchExpression(expr.base)
+            for x in expr.arguments:
+                self.searchExpression(x)
+        elif isinstance(expr, NewObjectExpression):
+            for x in expr.parameters:
+                self.searchExpression(x)
+        return
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
@@ -383,6 +450,8 @@ class ConstantExpression(Expression):
         self.value = val
 
     def __str__(self):
+        if self.type == "null" or self.type == "false" or self.type == "true":
+            return "ConstExpression(" + self.type.__str__() + ")"
         return "ConstExpression(" + self.type.__str__() + ", " + self.value.__str__() + ")"
 
 class VarExpression(Expression):
@@ -485,7 +554,7 @@ class MethodCallExpression(Expression):
 class NewObjectExpression(Expression):
     def __init__(self, lin, base, args):
         super().__init__(lin)
-        self.paramaters = args
+        self.parameters = args
         self.baseClass = base
     def __str__(self):
         return "NewObjectExpression()"
@@ -496,7 +565,7 @@ class ThisExpression(Expression):
         super().__init__(lin)
 
     def __str__(self):
-        return "This()"
+        return "This"
 
 class SuperExpression(Expression):
     def __init__(self, lin):
