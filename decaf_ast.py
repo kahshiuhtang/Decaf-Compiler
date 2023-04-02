@@ -1,3 +1,4 @@
+import sys
 class AST():
     def __init__(self, classes):
         self.classes = classes
@@ -7,8 +8,11 @@ class AST():
         self.setup()
     
     def print(self):
+        if self.errors():
+            return
         for x in self.classes:
             x.print()
+            print("----------------------")
     def setup(self):
         for x in self.classes:
             for field in x.fields.values():
@@ -21,10 +25,18 @@ class AST():
                 constructor.id = len(self.constructors) + 1
                 self.constructors.append(constructor)
         self.setup_selfdefined()
+    def errors(self):
+        names = set()
+        for x in self.classes:
+            if x.name in names:
+                print("Error: Duplicate Classes")
+                return True
+            names.add(x.name)
+        return False
     
     def setup_selfdefined(self):
-        inclass = Class("in", "")
-        outclass = Class("in", "")
+        inclass = Class("In", "")
+        outclass = Class("Out", "")
         scan_int = Method("scan_int", len(self.methods) + 1, "In", "public", "static", [], "int", Block(-1, []))
         self.methods.append(scan_int)
         inclass.addMethod(scan_int);
@@ -66,8 +78,27 @@ class Class(Node):
         self.constructors.update({len(self.constructors) : cons})
     def addMethod(self, meth):
         self.methods.update({len(self.methods) : meth})
+        if meth.containing_class != "Out" and meth.containing_class != "In" and self.error_check():
+            sys.exit()
     def addField(self, field):
         self.fields.update({len(self.fields) : field})
+        if self.error_check():
+            sys.exit()
+    
+    def error_check(self):
+        methods = set()
+        for x in self.methods.values():
+            if x.name in methods:
+                print("Error: Duplicate Method Names: " + x.name)
+                sys.exit()
+            methods.add(x.name)
+        fields = set()
+        for x in self.fields.values():
+            if x.name in fields:
+                print("Error: Duplicate Field Names: " + x.name)
+                sys.exit()
+            fields.add(x.name)
+
 
     def print(self):
         print("Class Name: " + self.name)
@@ -84,12 +115,13 @@ class Class(Node):
 
 
 class Constructor(Node):
-    def __init__(self, _id, vis):
+    def __init__(self, _id, vis, bod, params):
         self.id = _id
         self.visibility = vis
         self.parameters = []
-        self.variable_table = {}
-        self.body = []
+        self.variable_table = params
+        self.body = bod
+        self.setup()
     
     def __str__(self):
         print("CONSTRUCTOR: " + str(self.id) + ", " + self.visibility)
@@ -98,11 +130,40 @@ class Constructor(Node):
             print(x, end = " ")
         print()
         print("Variable Table:")
-        print("Method Body:")
-        for x in self.body:
+        for x in self.variable_table:
             print(x.__str__())
+        print("Method Body:")
+        print(self.body.__str__())
         return ""
-
+    
+    def setup(self):
+        names = {}
+        for i in range(len(self.body.expressions)):
+            if isinstance(self.body.expressions[i], list):
+                for x in self.body.expressions[i][1]:
+                    self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", self.body.expressions[i][0]))
+        self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
+        for i in range(len(self.body.expressions)):
+            if isinstance(self.body.expressions[i], Block):
+                self.addVarTable(block)
+            elif isinstance(self.body.expressions[i], While):
+                self.addVarTable(self.body.expressions[i].body)
+            elif isinstance(self.body.expressions[i], For):
+                self.addVarTable(self.body.expressions[i].body)
+            elif isinstance(self.body.expressions[i], If):
+                if self.body.expressions[i].else_part == None:
+                    self.addVarTable(self.body.expressions[i].then_part)
+                else:
+                    self.addVarTable(self.body.expressions[i].then_part)
+                    self.addVarTable(self.body.expressions[i].else_part)
+    def addVarTable(self, block):
+        if not isinstance(block, Block) or not isinstance(block.expressions, list):
+            return
+        for i in range(len(block.expressions)):
+            if isinstance(block.expressions[i], list):
+                for x in block.expressions[i][1]:
+                    self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0]))
+        block.expressions = [x for x in block.expressions if type(x)!=list]
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
         self.name = name
@@ -135,7 +196,28 @@ class Method(Node):
                 for x in self.body.expressions[i][1]:
                     self.variable_table.append(Variable(self.body.expressions[i][0], len(self.variable_table) + 1, "local", x))
         self.body.expressions = [x for x in self.body.expressions if type(x)!=list]
-
+        for i in range(len(self.body.expressions)):
+            if isinstance(self.body.expressions[i], Block):
+                self.addVarTable(block)
+            elif isinstance(self.body.expressions[i], While):
+                self.addVarTable(self.body.expressions[i].body)
+            elif isinstance(self.body.expressions[i], For):
+                self.addVarTable(self.body.expressions[i].body)
+            elif isinstance(self.body.expressions[i], If):
+                if self.body.expressions[i].else_part == None:
+                    self.addVarTable(self.body.expressions[i].then_part)
+                else:
+                    self.addVarTable(self.body.expressions[i].then_part)
+                    self.addVarTable(self.body.expressions[i].else_part)
+    def addVarTable(self, block):
+        if not isinstance(block, Block) or not isinstance(block.expressions, list):
+            return
+        for i in range(len(block.expressions)):
+            if isinstance(block.expressions[i], list):
+                for x in block.expressions[i][1]:
+                    self.variable_table.append(Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0]))
+        block.expressions = [x for x in block.expressions if type(x)!=list]
+    
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
         self.name = name
@@ -156,7 +238,7 @@ class Variable(Node):
         self.type = typ
     
     def __str__(self):
-        return "Variable(" + self.name +", " + str(self.id) +", " + self.kind + ", " + self.type + ")"
+        return "VARIABLE " + str(self.id) +", " + self.name +", " + self.kind + ", " + self.type
 
 class Type(Node):
     def __init__(self, typ):
@@ -180,11 +262,6 @@ class If(Statement):
         self.else_part = else_part
 
     def __str__(self):
-        block = self.then_part.__str__()
-        if isinstance(self.then_part, list):
-            for x in self.then_part:
-                block += x.__str__() + ","
-            block = block[:-1]
         if self.else_part == None:
             return  "If(" + self.condition.__str__() + ", " + self.then_part.__str__() +  ")"
         return "If(" + self.condition.__str__() + ", " + self.then_part.__str__() + ", " + self.else_part.__str__() +  ")"
@@ -196,7 +273,7 @@ class While(Statement):
         self.body = body
     
     def __str__(self):
-        return "While(" + self.condition.__str__() + ")"
+        return "While(" + self.condition.__str__() + "," + self.body.__str__() + ")"
 
 class For(Statement):
     def __init__(self, line, init, cond, up, bod):
@@ -248,11 +325,15 @@ class Block(Statement):
         super().__init__(line)
         self.expressions = expressions
     def __str__(self):
+        if not isinstance(self.expressions, list):
+            return "Block([\n" + self.expressions.__str__() +"\n])"
+        if len(self.expressions) == 0:
+            return "Block([])"
         ans = ""
         for x in self.expressions:
-            ans += x.__str__() + ","
-        ans = ans[:-1]
-        return "BLOCK(" + ans + ")"
+            ans += x.__str__() + ",\n"
+        ans = ans[:-2]
+        return "Block([\n" + ans + "])"
     
 class Break(Statement):
     def __init__(self, line):
@@ -292,9 +373,10 @@ class ConstantExpression(Expression):
 class VarExpression(Expression):
     def __init__(self, lin, id, val):
         super().__init__(lin)
-        self.id  = id
+        self.id  = 0
+        self.val = val
     def __str__(self):
-        return "VarExpression(" + self.id.__str__() + ", " + self.val.__str__() + ")"
+        return "Variable(" + self.id.__str__() + ", " + self.val.__str__() + ")"
 
 class UnaryExpression(Expression):
     def __init__(self, lin, operand, operator):
@@ -352,10 +434,10 @@ class AutoExpression(Expression):
     def __init__(self, lin , op, exp, pop):
         super().__init__(lin)
         self.operand = op
-        self.expresion = exp
+        self.expression = exp
         self.postOrPre = pop
     def __str__(self):
-        return "AutoExpression(" + self.op.__str__() + ", " + self.expression.__str__() + ", " + self.postOrPre.__str__() + ")"
+        return "AutoExpression(" + self.operand.__str__() + ", " + self.expression.__str__() + ", " + self.postOrPre.__str__() + ")"
 
 class FieldAccessExpression(Expression):
     def __init__(self, lin, base, field):

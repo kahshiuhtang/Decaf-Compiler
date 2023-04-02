@@ -1,3 +1,13 @@
 class a{
+	a(Person j, int k) {
+		int i;
+		for(i = 0; i < 10; i++){
+			int k;
+			k = 10;
+		}
+	}
 	a() {}
+	public static void ret(){
+		int x, b, n;
+	}
 }

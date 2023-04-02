@@ -2,7 +2,6 @@ class IntList{
 	int value;
 	IntList next;
 	IntList(){
-
 	}
 	IntList(int a){
 		

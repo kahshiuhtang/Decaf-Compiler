@@ -104,7 +104,6 @@ def p_class_body_decl(p):
 def p_field_decl(p):
     'field_decl : modifier var_decl'
     ans = []
-    print(p[2][1])
     for x in p[2][1]:
         ans.append(ast.Field(x, 0, "", p[1][0], p[1][1], p[2][0]))
     p[0] = ans
@@ -170,7 +169,7 @@ def p_method_decl(p):
     if p[2] == 'void':
         params = []
         for x in p[5]:
-            params.append(ast.Variable(x[1], len(params), "formal", x[0]))
+            params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void", ast.Block(p.lineno, p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
@@ -178,7 +177,7 @@ def p_method_decl(p):
     else:
         params = []
         for x in p[5]:
-            params.append(ast.Variable(x[1], len(params), "formal", x[0]))
+            params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2],ast.Block(p.lineno, p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
@@ -186,14 +185,11 @@ def p_method_decl(p):
 
 def p_constructor_decl(p):
     'constructor_decl : modifier ID LEFT_PN formals RIGHT_PN block'
-    p[0] = [ast.Constructor(0, p[1][0])]
     params = []
     for x in p[4]:
-        params.append(ast.Variable(x[1], len(params), "formal", x[0]))
-    p[0] = [ast.Constructor(0, p[1][0])]
+        params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
+    p[0] = [ast.Constructor(0, p[1][0], ast.Block(p.lineno, p[6]), params)]
     p[0][0].parameters = [(x+1) for x in range(len(params))]
-    p[0][0].variable_table = params
-    p[0][0].body = p[6]
     
 
 def p_formals(p):
@@ -252,14 +248,14 @@ def p_stmt(p):
     elif p[1] == ';':
         p[0] = ast.Skip(p.lineno)
     elif p[1] == 'while':
-        p[0] = ast.While(p.lineno, p[3], p[5])
+        p[0] = ast.While(p.lineno, p[3], ast.Block(p.lineno, p[5]))
     elif p[1] == 'for':
-        p[0] = ast.For(p.lineno, p[3], p[5], p[7], p[9])
+        p[0] = ast.For(p.lineno, p[3], p[5], p[7], ast.Block(p.lineno, p[9]))
     elif p[1] == 'if':
         if len(p) == 6:
-            p[0] = ast.If(p.lineno, p[3], p[5], None)
+            p[0] = ast.If(p.lineno, p[3], ast.Block(p.lineno, p[5]), None)
         elif len(p) == 8:
-            p[0] = ast.If(p.lineno, p[3], p[5], p[7])
+            p[0] = ast.If(p.lineno, p[3], ast.Block(p.lineno, p[5]), ast.Block(p.lineno, p[7]))
     elif p[1] == 'return':
         p[0] = p[2]
     else:
@@ -366,11 +362,14 @@ def p_field_access(p):
     if len(p) > 2:
         p[0] = ast.FieldAccessExpression(p.lineno, p[1], p[3])
     else:
-        p[0] = ast.FieldAccessExpression(p.lineno, ast.ThisExpression(p.lineno), p[1]) # IS THIS CORRECT?
+        p[0] = ast.VarExpression(p.lineno, 0, p[1]) # IS THIS CORRECT?
 
 
 def p_method_invocation(p):
     'method_invocation : field_access LEFT_PN arguments RIGHT_PN'
+    if isinstance(p[1], ast.VarExpression):
+        p[0] =  ast.MethodCallExpression(p.lineno, ast.ThisExpression(p.lineno), p[1].val, p[3])
+        return
     p[0] =  ast.MethodCallExpression(p.lineno, p[1].base, p[1].fieldName, p[3])
 
 def p_expr(p):
