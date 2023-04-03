@@ -1,6 +1,10 @@
 class a{
-	a(Person j, int k) {
+	void star(Person j, int k) {
 		int i;
+		for(i = 0; i < 10; i++){
+			int k;
+			k = 10;
+		}
 		for(i = 0; i < 10; i++){
 			int k;
 			k = 10;

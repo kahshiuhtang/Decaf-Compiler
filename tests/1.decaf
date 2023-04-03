@@ -1,8 +1,12 @@
 class a {int x;
    public static void main(){
     int x, y;
-    for(x = 0; x < 100; x++){
-        x = 100;
+    for(x = 0;;){
+        float z;
+        for(x = 0; x < 100; x++){
+            int x;
+            x = 100;
+        }
     }
    }
 }
