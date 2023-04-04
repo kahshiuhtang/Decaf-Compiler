@@ -210,15 +210,11 @@ class Constructor(Node):
                 self.searchExpression(x, curr_table)
             return
         if isinstance(expr, VarExpression):
-            for x in curr_table:
-                print(x)
-            print(expr)
-            print("----")
             for elem in reversed(curr_table):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
-            print("Error: Unfound Reference in " + self.name +  " method: Variable" + elem.name)
+            print("Error: Unfound Reference:" +  "Variable:" + elem.name)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
@@ -293,6 +289,8 @@ class Method(Node):
                     self.addVarTable(self.body.expressions[i].else_part, currTab)
             elif isinstance(self.body.expressions[i], Expression):
                 self.searchExpression(self.body.expressions[i], currTab)
+            elif isinstance(self.body.expressions[i], Return):
+                self.searchExpression(self.body.expressions[i].value, currTab)
     def addVarTable(self, block, curr_table):
         if not isinstance(block, Block) or not isinstance(block.expressions, list):
             if isinstance(block, Expression):
@@ -338,10 +336,6 @@ class Method(Node):
                 self.searchExpression(x, curr_table)
             return
         if isinstance(expr, VarExpression):
-            for x in curr_table:
-                print(x)
-            print(expr)
-            print("----")
             for elem in reversed(curr_table):
                 if elem.name == expr.val:
                     expr.id = elem.id
@@ -492,19 +486,19 @@ class Break(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "BREAK()"
+        return "Break"
 
 class Continue(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "CONTINUE()"
+        return "Continue"
 
 class Skip(Statement):
     def __init__(self, line):
         super().__init__(line)
     def __str__(self):
-        return "SKIP()"
+        return "Skip"
 
 class Expression(Node):
     def __init__(self, lin):
@@ -590,6 +584,10 @@ class AutoExpression(Expression):
         self.operand = op
         self.expression = exp
         self.postOrPre = pop
+        if self.operand == "+":
+            self.operand = "inc"
+        else:
+            self.operand = "dec"
     def __str__(self):
         return "AutoExpression(" + self.operand.__str__() + ", " + self.expression.__str__() + ", " + self.postOrPre.__str__() + ")"
 
@@ -618,7 +616,9 @@ class MethodCallExpression(Expression):
         if isinstance(self.arguments, list):
             arguments = ""
             for x in self.arguments:
-                arguments += x.__str__()
+                arguments += x.__str__() + ", "
+            arguments = arguments[:-2]
+            arguments = "(" + arguments + ")"
 
         return "MethodCallExpression(" + self.base.__str__() + ", " + self.methodName.__str__() + ", "+ arguments +")"
 class NewObjectExpression(Expression):
@@ -627,7 +627,15 @@ class NewObjectExpression(Expression):
         self.parameters = args
         self.baseClass = base
     def __str__(self):
-        return "NewObjectExpression()"
+        params = ""
+        if len(self.parameters) > 0:
+            for x in self.parameters:
+                params += x.__str__() + ", "
+            params = params[:-2]
+            params = "[]" + params + "]"
+        else:
+            params ="[]"
+        return "NewObjectExpression(" + self.baseClass +", " + params+ ")"
 
 
 class ThisExpression(Expression):

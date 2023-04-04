@@ -1,5 +1,5 @@
 class a {
-	int x() {
+	int x(float fl, List x) {
 		int a;
 		while(a) {
 

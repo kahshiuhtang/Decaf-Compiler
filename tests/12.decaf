@@ -1,11 +1,12 @@
 class a {
 	int y;
 	a(int u) {
-		y=u;
+		this.y=u;
 	}
 	int set(int a){
 		a y;
 		y = new a();
 		y.y = a;
+		return a;
 	}
 }

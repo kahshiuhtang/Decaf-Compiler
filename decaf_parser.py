@@ -350,7 +350,7 @@ def p_arguments_cont(p):
     if p[1] == None:
         p[0] = []
     else:
-        p[0] = p[2] + p[3]
+        p[0] = [p[2]] + p[3]
 
 def p_lhs(p):
     'lhs : field_access'
