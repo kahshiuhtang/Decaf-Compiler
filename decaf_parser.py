@@ -459,15 +459,15 @@ def p_gte_expr(p):
 
 def p_pos_expr(p):
     'expr : PLUS expr %prec UPLUS'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
 
 def p_minus_expr(p):
     'expr : MINUS expr %prec UMINUS'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
 
 def p_not_expr(p):
     'expr : NOT expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
 
 #def p_arith_op(p):
 #    '''arith_op : PLUS

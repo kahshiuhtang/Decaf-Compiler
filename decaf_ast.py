@@ -533,7 +533,7 @@ class UnaryExpression(Expression):
         self.operator = operator
     
     def __str__(self):
-        return "UnaryExpression( " + self.operand.__str__() + ", " + self.operator.__str__() + ")"
+        return "UnaryExpression(" + self.operand.__str__() + ", " + self.operator.__str__() + ")"
 
 class BinaryExpression(Expression):
     def __init__(self, lin, left, oper, right):
@@ -632,7 +632,7 @@ class NewObjectExpression(Expression):
             for x in self.parameters:
                 params += x.__str__() + ", "
             params = params[:-2]
-            params = "[]" + params + "]"
+            params = "[" + params + "]"
         else:
             params ="[]"
         return "NewObjectExpression(" + self.baseClass +", " + params+ ")"
