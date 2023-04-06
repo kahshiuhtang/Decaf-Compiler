@@ -188,8 +188,9 @@ def p_constructor_decl(p):
     params = []
     for x in p[4]:
         params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
+    parameters = [i + 1 for i in range(len(params))]
     p[0] = [ast.Constructor(0, p[1][0], ast.Block(p.lineno, p[6]), params)]
-    p[0][0].parameters = [(x+1) for x in range(len(params))]
+    p[0][0].parameters = parameters
     
 
 def p_formals(p):

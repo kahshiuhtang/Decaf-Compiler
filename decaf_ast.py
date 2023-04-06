@@ -89,7 +89,10 @@ class Class(Node):
     
     def error_check(self):
         methods = set()
+        for x in self.constructors.values():
+            x.check_params()
         for x in self.methods.values():
+            x.check_params()
             if x.name in methods:
                 print("Error: Duplicate Method Names: " + x.name)
                 sys.exit()
@@ -120,7 +123,7 @@ class Constructor(Node):
     def __init__(self, _id, vis, bod, params):
         self.id = _id
         self.visibility = vis
-        self.parameters = []
+        self.parameters = params
         self.variable_table = params
         self.body = bod
         self.setup()
@@ -214,7 +217,7 @@ class Constructor(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
-            print("Error: Unfound Reference:" +  "Variable:" + elem.name)
+            print("Error: Unfound Reference:" +  "Variable: " + elem.name)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
@@ -237,6 +240,14 @@ class Constructor(Node):
             for x in expr.parameters:
                 self.searchExpression(x, curr_table)
         return
+    def check_params(self):
+        params = set()
+        for x in self.parameters:
+            params.add(self.variable_table[x - 1].name)
+        for var in self.variable_table:
+            if var.name in params and var.kind != "formal":
+                print("Error: parameters have same name as local variables")
+                sys.exit()
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
         self.name = name
@@ -340,7 +351,7 @@ class Method(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
-            print("Error: Unfound Reference in " + self.name +  " method: Variable" + elem.name)
+            print("Error: Unfound Reference in " + self.name +  " method: variable " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
@@ -363,6 +374,14 @@ class Method(Node):
             for x in expr.parameters:
                 self.searchExpression(x, curr_table)
         return
+    def check_params(self):
+        params = set()
+        for x in self.parameters:
+            params.add(self.variable_table[x - 1].name)
+        for var in self.variable_table:
+            if var.name in params and var.kind != "formal":
+                print("Error: parameters have same name as local variables")
+                sys.exit()
 
 class Field(Node):
     def __init__(self, name, _id, cont, vis, appl, typ):
