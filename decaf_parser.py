@@ -47,6 +47,14 @@ def p_class_decl(p):
             p[0].addMethod(x)
     else:
         p[0] = ast.Class(p[2], p[4])
+        for x in p[6][0]:
+            x.containing_class = p[2]
+            p[0].addField(x)
+        for x in p[6][2]:
+            p[0].addConstructor(x)
+        for x in p[6][1]:
+            x.containing_class = p[2]
+            p[0].addMethod(x)
     pass
 
 def p_class_body_decl_list(p):
@@ -115,15 +123,16 @@ def p_modifier(p):
                 | PUBLIC
                 | PRIVATE
                 | STATIC
-                | empty'''
+                | empty
+                '''
     if len(p) == 2:
-        p[0] = ["private", "instance"]
-    elif len(p) == 3:
-        if p[1] == "static":
+        if p[1] == None:
+            p[0] = ["private", "instance"]
+        elif p[1] == "static":
             p[0] = ["private", "static"]
         else:
-            p[0] = [p[1], "instance"]
-    else:
+           p[0] = [p[1], "instance"] 
+    elif len(p) == 3:
         p[0] = [p[1], "static"]
 
 def p_var_decl(p):

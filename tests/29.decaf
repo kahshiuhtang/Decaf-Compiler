@@ -1,8 +1,7 @@
-class IntList{
-	int value;
-	IntList next;
-	Many one, two, three;
-	IntList(){
+class IntList extends Integer{
+	public static int value;
+	public IntList next;
+	public IntList(){
 	}
 	IntList(int a){
 		
@@ -14,13 +13,13 @@ class IntList{
 		new_element.next = null;
 		return new_element;
 	}
-	public IntList insert(int v) {
+	private IntList insert(int v) {
 		IntList new_element;
-		new_element = create_list(v);
+		new_element = this.create_list(v);
 		new_element.next = this;
 		return new_element;
 	}
-	public boolean search(int v) {
+	public static boolean search(int v) {
 		if (this.value == v){
 			/* head of
 			list matches */
@@ -36,13 +35,13 @@ class IntList{
 			/* search rest of the list */
 			return next.search(v);
 	}
-	public boolean search2(int v) {
+	boolean search2(int v) {
 		IntList x;
 		x = this;
 		for(;x.value != v && x.next != null; x = x.next);
 		return x;
 	}
-	public int length() {
+	static int length() {
 		if (this.next == null)  return 1;
 		else  return 1 + this.next.length();
 	}

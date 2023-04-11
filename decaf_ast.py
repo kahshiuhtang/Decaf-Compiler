@@ -217,7 +217,7 @@ class Constructor(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
-            print("Error: Unfound Reference:" +  "Variable: " + elem.name)
+            print("Error: Unfound Reference:" +  "Variable: " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)

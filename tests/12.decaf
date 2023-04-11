@@ -2,16 +2,9 @@ class a {
 	int y;
 	a(int a) {
 		Perso u, two, three;
-		Person man;
+		Person a;
 		Unit him;
 		him = new Person(2, 5.0);
-		man = new Person(man, 4.5);
-		while(man != 100){
-			int j;
-			for(j = 0; j < 25; j++){
-				continue;
-			}
-		}
 	}
 	int set(int a){
 		a y;
