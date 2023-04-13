@@ -217,7 +217,7 @@ class Constructor(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
-            print("Error: Unfound Reference:" +  "Variable: " + expr.val)
+            print("Error: Unfound reference in constructor with variable: " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
@@ -246,7 +246,7 @@ class Constructor(Node):
             params.add(self.variable_table[x - 1].name)
         for var in self.variable_table:
             if var.name in params and var.kind != "formal":
-                print("Error: parameters have same name as local variables")
+                print("Error: parameters have same name as local variables [" + var.name + "]")
                 sys.exit()
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
@@ -262,7 +262,7 @@ class Method(Node):
     
     def __str__(self):
         print("METHOD: " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibilty + ", " + self.applicability + ", " + self.return_type)
-        print("Method Parameters: ", end ="")
+        print("Method parameters: ", end ="")
         for x in self.parameters:
             print(x, end = " ")
         print()
@@ -380,7 +380,7 @@ class Method(Node):
             params.add(self.variable_table[x - 1].name)
         for var in self.variable_table:
             if var.name in params and var.kind != "formal":
-                print("Error: parameters have same name as local variables")
+                print("Error: parameters have same name as local variables: [" + var.name +"]")
                 sys.exit()
 
 class Field(Node):
@@ -393,7 +393,7 @@ class Field(Node):
         self.type = typ
     
     def __str__(self):
-        return "Field " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibility + ", " + self.applicability + ", " + self.type
+        return "FIELD " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibility + ", " + self.applicability + ", " + self.type
 
 class Variable(Node):
     def __init__(self, name, _id, kind, typ):

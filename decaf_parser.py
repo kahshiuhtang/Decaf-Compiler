@@ -127,11 +127,11 @@ def p_modifier(p):
                 '''
     if len(p) == 2:
         if p[1] == None:
-            p[0] = ["private", "instance"]
+            p[0] = ["private", "non-static"]
         elif p[1] == "static":
             p[0] = ["private", "static"]
         else:
-           p[0] = [p[1], "instance"] 
+           p[0] = [p[1], "non-static"] 
     elif len(p) == 3:
         p[0] = [p[1], "static"]
 
@@ -179,7 +179,7 @@ def p_method_decl(p):
         params = []
         for x in p[5]:
             params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
-        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void", ast.Block(p.lineno, p[7]))]
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void", ast.Block(p.lineno(7), p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
         p[0][0].setup()
@@ -187,7 +187,7 @@ def p_method_decl(p):
         params = []
         for x in p[5]:
             params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
-        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2],ast.Block(p.lineno, p[7]))]
+        p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2],ast.Block(p.lineno(7), p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
         p[0][0].setup()
@@ -198,7 +198,7 @@ def p_constructor_decl(p):
     for x in p[4]:
         params.append(ast.Variable(x[1], len(params) + 1, "formal", x[0]))
     parameters = [i + 1 for i in range(len(params))]
-    p[0] = [ast.Constructor(0, p[1][0], ast.Block(p.lineno, p[6]), params)]
+    p[0] = [ast.Constructor(0, p[1][0], ast.Block(p.lineno(6), p[6]), params)]
     p[0][0].parameters = parameters
     
 
@@ -252,20 +252,20 @@ def p_stmt(p):
             | var_decl
             | SEMI_COLON'''
     if p[1] == 'break':
-        p[0] = ast.Break(p.lineno)
+        p[0] = ast.Break(p.lineno(1))
     elif p[1] == 'continue':
-        p[0] = ast.Continue(p.lineno)
+        p[0] = ast.Continue(p.lineno(1))
     elif p[1] == ';':
-        p[0] = ast.Skip(p.lineno)
+        p[0] = ast.Skip(p.lineno(1))
     elif p[1] == 'while':
-        p[0] = ast.While(p.lineno, p[3], ast.Block(p.lineno, p[5]))
+        p[0] = ast.While(p.lineno(1), p[3], ast.Block(p.lineno(1), p[5]))
     elif p[1] == 'for':
-        p[0] = ast.For(p.lineno, p[3], p[5], p[7], ast.Block(p.lineno, p[9]))
+        p[0] = ast.For(p.lineno(1), p[3], p[5], p[7], ast.Block(p.lineno(1), p[9]))
     elif p[1] == 'if':
         if len(p) == 6:
-            p[0] = ast.If(p.lineno, p[3], ast.Block(p.lineno, p[5]), None)
+            p[0] = ast.If(p.lineno(1), p[3], ast.Block(p.lineno(1), p[5]), None)
         elif len(p) == 8:
-            p[0] = ast.If(p.lineno, p[3], ast.Block(p.lineno, p[5]), ast.Block(p.lineno, p[7]))
+            p[0] = ast.If(p.lineno(1), p[3], ast.Block(p.lineno(1), p[5]), ast.Block(p.lineno(1), p[7]))
     elif p[1] == 'return':
         p[0] = p[2]
     else:
@@ -299,11 +299,11 @@ def p_return_val(p):
     '''return_val : expr
                   | empty'''
     if p[1] == None:
-        p[0] =  ast.Return(p.lineno, "None")
+        p[0] =  ast.Return(p.lineno(1), "None")
     elif p[1] == "return":
-        p[0] = ast.Return(p.lineno, "None")
+        p[0] = ast.Return(p.lineno(1), "None")
     else:
-        p[0] =  ast.Return(p.lineno, p[1])
+        p[0] =  ast.Return(p.lineno(1), p[1])
 
 def p_literal(p):
     '''literal : INT_CONST
@@ -313,17 +313,17 @@ def p_literal(p):
                | TRUE
                | FALSE'''
     if p[1] == 'null':
-        p[0] = ast.ConstantExpression(p.lineno, "null", "null")
+        p[0] = ast.ConstantExpression(p.lineno(1), "null", "null")
     elif p[1] == "true":
-        p[0] = ast.ConstantExpression(p.lineno, "boolean", "true")
+        p[0] = ast.ConstantExpression(p.lineno(1), "boolean", "true")
     elif p[1] == "false":
-        p[0] = ast.ConstantExpression(p.lineno, "boolean", "false")
+        p[0] = ast.ConstantExpression(p.lineno(1), "boolean", "false")
     elif isinstance(p[1], int):
-        p[0] = ast.ConstantExpression(p.lineno, "int", int(p[1]))
+        p[0] = ast.ConstantExpression(p.lineno(1), "int", int(p[1]))
     elif isinstance(p[1], float):
-        p[0] = ast.ConstantExpression(p.lineno, "float", float(p[1]))
+        p[0] = ast.ConstantExpression(p.lineno(1), "float", float(p[1]))
     else:
-        p[0] = ast.ConstantExpression(p.lineno, "string", p[1][1:-1])
+        p[0] = ast.ConstantExpression(p.lineno(1), "string", p[1][1:-1])
     pass
 
 def p_primary(p):
@@ -335,11 +335,11 @@ def p_primary(p):
                | lhs
                | method_invocation'''
     if p[1] == 'this':
-        p[0] = ast.ThisExpression(p.lineno)
+        p[0] = ast.ThisExpression(p.lineno(1))
     elif p[1] == 'super':
-        p[0] = ast.SuperExpression(p.lineno)
+        p[0] = ast.SuperExpression(p.lineno(1))
     elif p[1] == 'new':
-        p[0] = ast.NewObjectExpression(p.lineno, p[2], p[4])
+        p[0] = ast.NewObjectExpression(p.lineno(1), p[2], p[4])
     elif p[1] == '(':
         p[0] = p[2]
     else:
@@ -370,17 +370,17 @@ def p_field_access(p):
     '''field_access : primary DOT ID
                     | ID'''
     if len(p) > 2:
-        p[0] = ast.FieldAccessExpression(p.lineno, p[1], p[3])
+        p[0] = ast.FieldAccessExpression(p.lineno(1), p[1], p[3])
     else:
-        p[0] = ast.VarExpression(p.lineno, 0, p[1]) # IS THIS CORRECT?
+        p[0] = ast.VarExpression(p.lineno(1), 0, p[1]) # IS THIS CORRECT?
 
 
 def p_method_invocation(p):
     'method_invocation : field_access LEFT_PN arguments RIGHT_PN'
     if isinstance(p[1], ast.VarExpression):
-        p[0] =  ast.MethodCallExpression(p.lineno, ast.ThisExpression(p.lineno), p[1].val, p[3])
+        p[0] =  ast.MethodCallExpression(p.lineno(1), ast.ThisExpression(p.lineno(1)), p[1].val, p[3])
         return
-    p[0] =  ast.MethodCallExpression(p.lineno, p[1].base, p[1].fieldName, p[3])
+    p[0] =  ast.MethodCallExpression(p.lineno(1), p[1].base, p[1].fieldName, p[3])
 
 def p_expr(p):
     '''expr : primary
@@ -402,15 +402,15 @@ def p_assign(p):
               | lhs DECREMENT
               | DECREMENT lhs'''
     if p[2] == '=':
-        p[0] = ast.AssignExpression(p.lineno, p[1], p[3])
+        p[0] = ast.AssignExpression(p.lineno(1), p[1], p[3])
     elif p[2] == '++':
-        p[0] = ast.AutoExpression(p.lineno,'+', p[1],"post")
+        p[0] = ast.AutoExpression(p.lineno(1),'+', p[1],"post")
     elif p[2] == '--':
-        p[0] = ast.AutoExpression(p.lineno,'-', p[1],"post")
+        p[0] = ast.AutoExpression(p.lineno(1),'-', p[1],"post")
     elif p[1] == '++':
-        p[0] = ast.AutoExpression(p.lineno,'+', p[1],"pre")
+        p[0] = ast.AutoExpression(p.lineno(1),'+', p[1],"pre")
     elif p[1] == '--':  
-        p[0] = ast.AutoExpression(p.lineno,'-', p[1],"pre")
+        p[0] = ast.AutoExpression(p.lineno(1),'-', p[1],"pre")
 #def p_assign(p):
 #    '''assign : lhs ASSIGN expr
 #              | lhs PLUS PLUS
@@ -425,59 +425,59 @@ def p_add_expr(p):
 
 def p_sub_expr(p):
     'expr : expr MINUS expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_mult_exp(p):
     'expr : expr STAR expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_div_expr(p):
     'expr : expr F_SLASH expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_conj_expr(p):
     'expr : expr AND expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_disj_expr(p):
     'expr : expr OR expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_equals_expr(p):
     'expr : expr EQ expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_notequals_expr(p):
     'expr : expr NOT_EQ expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_lt_expr(p):
     'expr : expr LT expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_lte_expr(p):
     'expr : expr LTE expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_gt_expr(p):
     'expr : expr GT expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_gte_expr(p):
     'expr : expr GTE expr'
-    p[0] = ast.BinaryExpression(p.lineno,p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1),p[1], p[2], p[3])
 
 def p_pos_expr(p):
     'expr : PLUS expr %prec UPLUS'
-    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
+    p[0] = ast.UnaryExpression(p.lineno(1),p[2], p[1])
 
 def p_minus_expr(p):
     'expr : MINUS expr %prec UMINUS'
-    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
+    p[0] = ast.UnaryExpression(p.lineno(1),p[2], p[1])
 
 def p_not_expr(p):
     'expr : NOT expr'
-    p[0] = ast.UnaryExpression(p.lineno,p[2], p[1])
+    p[0] = ast.UnaryExpression(p.lineno(1),p[2], p[1])
 
 #def p_arith_op(p):
 #    '''arith_op : PLUS
