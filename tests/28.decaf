@@ -1,7 +1,7 @@
 class IntList{
-	int value;
-	IntList next;
-	Many one, two, three;
+	static int value, three, four;
+	IntList next, five, seven;
+	Many one, two;
 	IntList(){
 	}
 	IntList(int a){

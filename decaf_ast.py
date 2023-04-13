@@ -384,13 +384,14 @@ class Method(Node):
                 sys.exit()
 
 class Field(Node):
-    def __init__(self, name, _id, cont, vis, appl, typ):
+    def __init__(self, name, _id, cont, vis, appl, typ, line):
         self.name = name
         self.id = _id
         self.containing_class = cont
         self.visibility = vis
         self.applicability = appl
         self.type = typ
+        self.line = line
     
     def __str__(self):
         return "FIELD " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibility + ", " + self.applicability + ", " + self.type
