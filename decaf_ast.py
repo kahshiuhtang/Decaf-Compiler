@@ -15,15 +15,22 @@ class AST():
             x.print()
             print("----------------------")
     def setup(self):
+        names = set()
+        names.add("In")
+        names.add("Out")
+        for x in self.classes:
+            names.add(x.name)
         for x in self.classes:
             for field in x.fields.values():
                 field.id = len(self.variables) + 1
                 self.variables.append(field)
             for method in x.methods.values():
                 method.id = len(self.methods) + 1
+                method.setup(names)
                 self.methods.append(method)
             for constructor in x.constructors.values():
                 constructor.id = len(self.constructors) + 1
+                constructor.setup(names)
                 self.constructors.append(constructor)
         self.setup_selfdefined()
     def errors(self):
@@ -31,6 +38,7 @@ class AST():
         for x in self.classes:
             if x.name in names:
                 print("Error: Duplicate Classes")
+                sys.exit()
                 return True
             names.add(x.name)
         return False
@@ -126,7 +134,7 @@ class Constructor(Node):
         self.parameters = params
         self.variable_table = params
         self.body = bod
-        self.setup()
+        # self.setup()
     
     def __str__(self):
         print("CONSTRUCTOR: " + str(self.id) + ", " + self.visibility)
@@ -141,7 +149,8 @@ class Constructor(Node):
         print(self.body.__str__())
         return ""
     
-    def setup(self):
+    def setup(self, n):
+        self.n = n
         names = {}
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], list):
@@ -217,6 +226,8 @@ class Constructor(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
+            if expr.val in self.n:
+                return
             print("Error: Unfound reference in constructor with variable: " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
@@ -273,7 +284,8 @@ class Method(Node):
         print(self.body.__str__())
         return ""
     
-    def setup(self):
+    def setup(self, n):
+        self.n = n
         names = {}
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], list):
@@ -351,6 +363,8 @@ class Method(Node):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
+            if expr.val in self.n:
+                return
             print("Error: Unfound Reference in " + self.name +  " method: variable " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
@@ -673,8 +687,9 @@ class SuperExpression(Expression):
         return "Super"
 
 class ClassReferenceExpression(Expression):
-    def __init__(self, lin, ref):
+    def __init__(self, lin, ref, expr):
         super().__init__(lin)
         self.classReference = ref
+        self.expr = expr
     def __str__(self):
-        return "ClassReference(" + self.classReference + ")"
+        return "ClassReference(" + self.classReference + ", " + self.expr +")"

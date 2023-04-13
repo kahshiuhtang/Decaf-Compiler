@@ -193,7 +193,6 @@ def p_method_decl(p):
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], "void", ast.Block(p.lineno(7), p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
-        p[0][0].setup()
     else:
         params = []
         for x in p[5]:
@@ -201,7 +200,6 @@ def p_method_decl(p):
         p[0] = [ast.Method(p[3], 0, "", p[1][0], p[1][1], p[5], p[2],ast.Block(p.lineno(7), p[7]))]
         p[0][0].parameters = [(x+1) for x in range(len(params))]
         p[0][0].variable_table = params
-        p[0][0].setup()
 
 def p_constructor_decl(p):
     'constructor_decl : modifier ID LEFT_PN formals RIGHT_PN block'
