@@ -213,21 +213,22 @@ class Constructor(Node):
                     self.addVarTable(block.expressions[i].else_part, new_curr_table)
                     # self.fill(block.expressions[i].else_part, new_curr_table)
             elif isinstance(block.expressions[i], Expression):
-                self.searchExpression(block.expressions[i], new_curr_table)
+                ret = self.searchExpression(block.expressions[i], new_curr_table)
+                if isinstance(ret, ClassReferenceExpression):
+                    block.expressions[i] = ret
             elif isinstance(block.expressions[i], Return):
                 self.searchExpression(block.expressions[i].value, new_curr_table)
     def searchExpression(self, expr, curr_table):
         if isinstance(expr, list):
             for x in expr:
                 self.searchExpression(x, curr_table)
-            return
         if isinstance(expr, VarExpression):
             for elem in reversed(curr_table):
                 if elem.name == expr.val:
                     expr.id = elem.id
                     return
             if expr.val in self.n:
-                return
+                return ClassReferenceExpression(expr.lineNumber, expr.val)
             print("Error: Unfound reference in constructor with variable: " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
@@ -350,7 +351,9 @@ class Method(Node):
                     self.addVarTable(block.expressions[i].else_part, new_curr_table)
                     # self.fill(block.expressions[i].else_part, new_curr_table)
             elif isinstance(block.expressions[i], Expression):
-                self.searchExpression(block.expressions[i], new_curr_table)
+                ret = self.searchExpression(block.expressions[i], new_curr_table)
+                if isinstance(ret, ClassReferenceExpression):
+                    block.expressions[i] = ret
             elif isinstance(block.expressions[i], Return):
                 self.searchExpression(block.expressions[i].value, new_curr_table)
     def searchExpression(self, expr, curr_table):
@@ -364,7 +367,7 @@ class Method(Node):
                     expr.id = elem.id
                     return
             if expr.val in self.n:
-                return
+                return ClassReferenceExpression(expr.lineNumber, expr.val)
             print("Error: Unfound Reference in " + self.name +  " method: variable " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
@@ -687,9 +690,8 @@ class SuperExpression(Expression):
         return "Super"
 
 class ClassReferenceExpression(Expression):
-    def __init__(self, lin, ref, expr):
+    def __init__(self, lin, ref):
         super().__init__(lin)
         self.classReference = ref
-        self.expr = expr
     def __str__(self):
-        return "ClassReference(" + self.classReference + ", " + self.expr +")"
+        return "ClassReference(" + self.classReference  +")"
