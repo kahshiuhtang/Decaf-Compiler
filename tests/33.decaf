@@ -1,0 +1,6 @@
+class person{
+    void main(){
+        int ret;
+        ret = new Main(one, two, three);
+    }
+}

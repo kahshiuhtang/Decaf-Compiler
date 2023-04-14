@@ -363,7 +363,7 @@ class Method(Node):
                     return
             if expr.val in self.n:
                 return ClassReferenceExpression(expr.lineNumber, expr.val)
-            print("Error: Unfound Reference in " + self.name +  " method: variable " + expr.val)
+            print("Error: Unfound reference in " + self.name +  " method: variable " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
