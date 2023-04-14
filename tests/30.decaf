@@ -1,0 +1,6 @@
+class main{
+    main(){
+        IntList h;
+        h = main.two++;
+    }
+}

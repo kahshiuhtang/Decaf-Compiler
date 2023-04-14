@@ -138,7 +138,7 @@ class Constructor(Node):
     
     def __str__(self):
         print("CONSTRUCTOR: " + str(self.id) + ", " + self.visibility)
-        print("Constructor Parameters: ", end ="")
+        print("Constructor parameters: ", end ="")
         for x in self.parameters:
             print(x, end = " ")
         print()
@@ -213,15 +213,14 @@ class Constructor(Node):
                     self.addVarTable(block.expressions[i].else_part, new_curr_table)
                     # self.fill(block.expressions[i].else_part, new_curr_table)
             elif isinstance(block.expressions[i], Expression):
-                ret = self.searchExpression(block.expressions[i], new_curr_table)
-                if isinstance(ret, ClassReferenceExpression):
-                    block.expressions[i] = ret
+                self.searchExpression(block.expressions[i], new_curr_table)
             elif isinstance(block.expressions[i], Return):
                 self.searchExpression(block.expressions[i].value, new_curr_table)
     def searchExpression(self, expr, curr_table):
         if isinstance(expr, list):
             for x in expr:
                 self.searchExpression(x, curr_table)
+            return
         if isinstance(expr, VarExpression):
             for elem in reversed(curr_table):
                 if elem.name == expr.val:
@@ -243,9 +242,13 @@ class Constructor(Node):
         elif isinstance(expr, AutoExpression):
             self.searchExpression(expr.expression, curr_table)
         elif isinstance (expr, FieldAccessExpression):
-            self.searchExpression(expr.base, curr_table)
+            ret = self.searchExpression(expr.base, curr_table)
+            if isinstance(ret, ClassReferenceExpression):
+                expr.base = ret
         elif isinstance(expr, MethodCallExpression):
-            self.searchExpression(expr.base, curr_table)
+            ret = self.searchExpression(expr.base, curr_table)
+            if isinstance(ret, ClassReferenceExpression):
+                expr.base = ret
             for x in expr.arguments:
                 self.searchExpression(x, curr_table)
         elif isinstance(expr, NewObjectExpression):
@@ -305,16 +308,16 @@ class Method(Node):
                 self.searchExpression(self.body.expressions[i].update_expression, currTab)
                 self.addVarTable(self.body.expressions[i].body, currTab)
             elif isinstance(self.body.expressions[i], If):
-                self.searchExpression(self.body.expressions[i].condition, currTab)
+                ret2 = self.searchExpression(self.body.expressions[i].condition, currTab)
                 if self.body.expressions[i].else_part == None:
                     self.addVarTable(self.body.expressions[i].then_part, currTab)
                 else:
                     self.addVarTable(self.body.expressions[i].then_part, currTab)
                     self.addVarTable(self.body.expressions[i].else_part, currTab)
             elif isinstance(self.body.expressions[i], Expression):
-                self.searchExpression(self.body.expressions[i], currTab)
+                ret = self.searchExpression(self.body.expressions[i], currTab)
             elif isinstance(self.body.expressions[i], Return):
-                self.searchExpression(self.body.expressions[i].value, currTab)
+                ret = self.searchExpression(self.body.expressions[i].value, currTab)
     def addVarTable(self, block, curr_table):
         if not isinstance(block, Block) or not isinstance(block.expressions, list):
             if isinstance(block, Expression):
@@ -329,31 +332,23 @@ class Method(Node):
                     new_curr_table.append(var);
             elif isinstance(block.expressions[i], Block):
                 self.addVarTable(block.expressions[i], new_curr_table)
-                # self.fill(block.expressions[i], new_curr_table)
             elif isinstance(block.expressions[i], While):
                 self.searchExpression(block.expressions[i].condition, new_curr_table)
                 self.addVarTable(block.expressions[i].body, new_curr_table)
-                # self.fill(block.expressions[i].body, new_curr_table)
             elif isinstance(block.expressions[i], For):
                 self.searchExpression(block.expressions[i].initialize, new_curr_table)
                 self.searchExpression(block.expressions[i].loop_condition, new_curr_table)
                 self.searchExpression(block.expressions[i].update_expression, new_curr_table)
                 self.addVarTable(block.expressions[i].body, new_curr_table)
-                # self.fill(block.expressions[i].body, new_curr_table)
             elif isinstance(block.expressions[i], If):
                 self.searchExpression(block.expressions[i].condition, new_curr_table)
                 if block.expressions[i].else_part == None:
                     self.addVarTable(block.expressions[i].then_part, new_curr_table)
-                    # self.fill(block.expressions[i].then_part, new_curr_table)
                 else:
                     self.addVarTable(block.expressions[i].then_part, new_curr_table)
-                    # self.fill(block.expressions[i].then_part, new_curr_table)
                     self.addVarTable(block.expressions[i].else_part, new_curr_table)
-                    # self.fill(block.expressions[i].else_part, new_curr_table)
             elif isinstance(block.expressions[i], Expression):
-                ret = self.searchExpression(block.expressions[i], new_curr_table)
-                if isinstance(ret, ClassReferenceExpression):
-                    block.expressions[i] = ret
+                self.searchExpression(block.expressions[i], new_curr_table)
             elif isinstance(block.expressions[i], Return):
                 self.searchExpression(block.expressions[i].value, new_curr_table)
     def searchExpression(self, expr, curr_table):
@@ -382,9 +377,13 @@ class Method(Node):
         elif isinstance(expr, AutoExpression):
             self.searchExpression(expr.expression, curr_table)
         elif isinstance (expr, FieldAccessExpression):
-            self.searchExpression(expr.base, curr_table)
+            ret = self.searchExpression(expr.base, curr_table)
+            if isinstance(ret, ClassReferenceExpression):
+                expr.base = ret
         elif isinstance(expr, MethodCallExpression):
-            self.searchExpression(expr.base, curr_table)
+            ret = self.searchExpression(expr.base, curr_table)
+            if isinstance(ret, ClassReferenceExpression):
+                expr.base = ret
             for x in expr.arguments:
                 self.searchExpression(x, curr_table)
         elif isinstance(expr, NewObjectExpression):
@@ -694,4 +693,4 @@ class ClassReferenceExpression(Expression):
         super().__init__(lin)
         self.classReference = ref
     def __str__(self):
-        return "ClassReference(" + self.classReference  +")"
+        return "ClassReference(" + self.classReference +")"

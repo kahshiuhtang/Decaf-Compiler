@@ -1,5 +1,3 @@
-
-
 import sys
 from decaf_lexer import *
 import decaf_ast as ast
@@ -53,8 +51,13 @@ def p_class_decl(p):
     else:
         p[0] = ast.Class(p[2], p[4])
         for x in p[6][0]:
-            x.containing_class = p[2]
-            p[0].addField(x)
+            if isinstance(x, list):
+                for y in x:
+                    y.containing_class = p[2]
+                    p[0].addField(y)
+            else:
+                x.containing_class = p[2]
+                p[0].addField(x)
         for x in p[6][2]:
             p[0].addConstructor(x)
         for x in p[6][1]:
@@ -140,11 +143,11 @@ def p_modifier(p):
                 '''
     if len(p) == 2:
         if p[1] == None:
-            p[0] = ["private", "non-static"]
+            p[0] = ["private", "instance"]
         elif p[1] == "static":
             p[0] = ["private", "static"]
         else:
-           p[0] = [p[1], "non-static"] 
+           p[0] = [p[1], "instance"] 
     elif len(p) == 3:
         p[0] = [p[1], "static"]
 

@@ -1,0 +1,18 @@
+class main{
+    int one, two, three;
+    static Reaper four;
+    static Conform seven, eight;
+    static boolean ten;
+    main(){
+        IntList h;
+        h = this.seven;
+        h = main.two++;
+    }
+    static void ret(int ret, horn meme){
+        Conform l;
+        l = new Conform();
+        for(l = 0; l < 100; l++){
+            continue;
+        }
+    }
+}

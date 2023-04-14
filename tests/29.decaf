@@ -9,13 +9,13 @@ class IntList extends Integer{
 	public static IntList create_list(int v) {
 		IntList new_element, old_element;
 		new_element = new IntList();
-		new_element.value = v;
+		new_element.value = IntList.v;
 		new_element.next = null;
 		return new_element;
 	}
 	private IntList insert(int v) {
 		IntList new_element;
-		new_element = this.create_list(v);
+		new_element = IntList.create_list(v);
 		new_element.next = this;
 		return new_element;
 	}
@@ -27,13 +27,13 @@ class IntList extends Integer{
 		}
 		else
 			/* not at head, so search rest of list */
-			if (next == null){
+			if (this.next == null){
 				/* end of list, so search fails */
 				return false;
 			}
 		else
 			/* search rest of the list */
-			return next.search(v);
+			return this.next.search(v);
 	}
 	boolean search2(int v) {
 		IntList x;
