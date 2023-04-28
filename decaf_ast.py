@@ -1,25 +1,30 @@
 import sys
 import copy 
+import decaf_typecheck as tc
 class AST():
     def __init__(self, classes):
         self.classes = classes
-        self.methods = []
+        self.methods = {}
         self.variables = []
         self.constructors = []
+        self.class_dict = {}
         self.setup()
-    
+        self.typechecker = tc.TypeChecker()
+        self.typechecker.check(self) 
+        
     def print(self):
         if self.errors():
             return
-        for x in self.classes:
-            x.print()
-            print("----------------------")
+        #for x in self.classes:
+            #x.print()
+            #print("----------------------")
     def setup(self):
         names = set()
         names.add("In")
         names.add("Out")
         for x in self.classes:
             names.add(x.name)
+            self.class_dict.update({x.name: x})
         for x in self.classes:
             for field in x.fields.values():
                 field.id = len(self.variables) + 1
@@ -27,7 +32,7 @@ class AST():
             for method in x.methods.values():
                 method.id = len(self.methods) + 1
                 method.setup(names)
-                self.methods.append(method)
+                self.methods.update({method.id : method})
             for constructor in x.constructors.values():
                 constructor.id = len(self.constructors) + 1
                 constructor.setup(names)
@@ -47,27 +52,27 @@ class AST():
         inclass = Class("In", "")
         outclass = Class("Out", "")
         scan_int = Method("scan_int", len(self.methods) + 1, "In", "public", "static", [], "int", Block(-1, []))
-        self.methods.append(scan_int)
+        self.methods.update({scan_int.id : scan_int})
         inclass.addMethod(scan_int);
         scan_float = Method("scan_float", len(self.methods) + 1, "In", "public", "static", [], "float", Block(-1, []));
-        self.methods.append(scan_float)
+        self.methods.update({scan_float.id : scan_float})
         inclass.addMethod(scan_float)
         printi = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # int i
         printi.variable_table = [Variable("i", 1, "formal", "int")]
         outclass.addMethod(printi)
-        self.methods.append(printi)
+        self.methods.update({printi.id : printi})
         printf = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # float f
         printf.variable_table = [Variable("f", 1, "formal", "float")]
         outclass.addMethod(printf)
-        self.methods.append(printf)
+        self.methods.update({printf.id : printf})
         printb = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # boolean b
         printb.variable_table = [Variable("b", 1, "formal", "boolean")]
         outclass.addMethod(printb)
-        self.methods.append(printb)
+        self.methods.update({printb.id : printb})
         prints = Method("print", len(self.methods) + 1, "Out", "public", "static", [1], "void", Block(-1, [])); # string s
         prints.variable_table = [Variable("s", 1, "formal", "string")]
         outclass.addMethod(prints)
-        self.methods.append(prints)
+        self.methods.update({prints.id : prints})
         self.classes.append(inclass)
         self.classes.append(outclass)
 
@@ -125,7 +130,6 @@ class Class(Node):
         print("Methods:")
         for x in self.methods.values():
             x.__str__()
-
 
 class Constructor(Node):
     def __init__(self, _id, vis, bod, params):
@@ -263,6 +267,7 @@ class Constructor(Node):
             if var.name in params and var.kind != "formal":
                 print("Error: parameters have same name as local variables [" + var.name + "]")
                 sys.exit()
+
 class Method(Node):
     def __init__(self, name, _id, cont, vis, appl, params, ret, bod):
         self.name = name
@@ -432,6 +437,7 @@ class Type(Node):
 class Statement(Node):
     def __init__(self, line):
         self.lineNumber = line
+        self.type = None
 
     def toString():
         print("STATEMENT")
@@ -501,7 +507,6 @@ class Return(Statement):
             return "Return()"
         return "Return(" + self.value.__str__() + ")"
         
-
 class Block(Statement):
     def __init__(self, line, expressions):
         super().__init__(line)
@@ -537,16 +542,15 @@ class Skip(Statement):
         return "Skip"
 
 class Expression(Node):
-    def __init__(self, lin):
+    def __init__(self, lin, typ):
         self.lineNumber = lin
+        self.type = typ
     def __str__(self):
         pass
-
     
 class ConstantExpression(Expression):
     def __init__(self, lin, typ, val):
-        super().__init__(lin)
-        self.type = typ
+        super().__init__(lin, typ)
         self.value = val
 
     def __str__(self):
@@ -556,15 +560,15 @@ class ConstantExpression(Expression):
 
 class VarExpression(Expression):
     def __init__(self, lin, id, val):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.id  = 0
         self.val = val
     def __str__(self):
-        return "Variable(" + self.id.__str__() + ", " + self.val.__str__() + ")"
+        return "Variable(" + self.id.__str__() + ", " + self.val.__str__() +", " + self.type.__str__() + ")"
 
 class UnaryExpression(Expression):
     def __init__(self, lin, operand, operator):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.operand = operand
         self.operator = operator
     
@@ -573,7 +577,7 @@ class UnaryExpression(Expression):
 
 class BinaryExpression(Expression):
     def __init__(self, lin, left, oper, right):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.left_operand = left
         self.operator = self.fix(oper)
         self.right_operand = right
@@ -606,9 +610,10 @@ class BinaryExpression(Expression):
             return "leq"
         elif oper == ">=":
             return "geq"
+
 class AssignExpression(Expression):
     def __init__(self, lin, left, right):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.left_expression = left
         self.right_expression = right
     def __str__(self):
@@ -616,7 +621,7 @@ class AssignExpression(Expression):
 
 class AutoExpression(Expression):
     def __init__(self, lin , op, exp, pop):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.operand = op
         self.expression = exp
         self.postOrPre = pop
@@ -629,7 +634,7 @@ class AutoExpression(Expression):
 
 class FieldAccessExpression(Expression):
     def __init__(self, lin, base, field):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.base = base
         self.fieldName = field
     def __str__(self):
@@ -643,7 +648,7 @@ class FieldAccessExpression(Expression):
 
 class MethodCallExpression(Expression):
     def __init__(self, lin, base, name, args):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.base = base
         self.methodName = name
         self.arguments = args
@@ -657,9 +662,10 @@ class MethodCallExpression(Expression):
             arguments = "(" + arguments + ")"
 
         return "MethodCallExpression(" + self.base.__str__() + ", " + self.methodName.__str__() + ", "+ arguments +")"
+
 class NewObjectExpression(Expression):
     def __init__(self, lin, base, args):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.parameters = args
         self.baseClass = base
     def __str__(self):
@@ -673,24 +679,24 @@ class NewObjectExpression(Expression):
             params ="[]"
         return "NewObjectExpression(" + self.baseClass +", " + params+ ")"
 
-
 class ThisExpression(Expression):
     def __init__(self, lin):
-        super().__init__(lin)
+        super().__init__(lin, None)
 
     def __str__(self):
         return "This"
 
 class SuperExpression(Expression):
     def __init__(self, lin):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.value = "super"
     def __str__(self):
         return "Super"
 
 class ClassReferenceExpression(Expression):
     def __init__(self, lin, ref):
-        super().__init__(lin)
+        super().__init__(lin, None)
         self.classReference = ref
+        self.type = "class-literal(" + ref + ")"
     def __str__(self):
-        return "ClassReference(" + self.classReference +")"
+        return "ClassReference(" + self.classReference +", " +self.type+")"

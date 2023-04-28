@@ -1,0 +1,22 @@
+class a extends b {
+	static int a;
+	int x(){
+        int x;
+        double m, z;
+        boolean s;
+        x = 10;
+        return 1;
+    }
+}
+class b extends c{
+    static int normal;
+    static void b_method(){
+        int x, y;
+    }
+}
+class c{
+    int highest;
+    static void c_method(){
+
+    }
+}

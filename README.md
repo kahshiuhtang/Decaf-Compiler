@@ -15,3 +15,12 @@
     - Turns the tokens generated and uses bottom up rules to check for errors
     - Tries to construct as much of AST as it can
 * Not my parser, checker or lexer code, used Professor Kane's parser, AST add-ons are part of parser is the only part that is mine
+
+##### decaf_typecheck.py
+    - Strictly used for the rules
+
+TypeChecking Methods:
+- Fill out AST
+- Start Traversing each class
+- Stop at variable expression and const expression
+    - This will return and we will go up and start type checking

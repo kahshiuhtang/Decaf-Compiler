@@ -34,7 +34,7 @@ def p_class_decl(p):
     '''class_decl : CLASS ID LEFT_CB class_body_decl_list RIGHT_CB
                   | CLASS ID EXTENDS ID LEFT_CB class_body_decl_list  RIGHT_CB'''
     if p[3] == '{':
-        p[0] = ast.Class(p[2], "")
+        p[0] = ast.Class(p[2], None)
         for x in p[4][0]:
             if isinstance(x, list):
                 for y in x:
@@ -399,14 +399,6 @@ def p_expr(p):
             | assign'''
     p[0] = p[1]
     
-#def p_expr(p):
-#   '''expr : primary
-#            | assign
-#            | expr arith_op expr
-#            | expr bool_op expr
-#            | unary_op expr'''
-#    pass
-
 def p_assign(p):
     '''assign : lhs ASSIGN expr
               | lhs INCREMENT
