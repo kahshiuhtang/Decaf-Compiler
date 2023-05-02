@@ -481,7 +481,7 @@ def p_minus_expr(p):
 
 def p_not_expr(p):
     'expr : NOT expr'
-    p[0] = ast.UnaryExpression(p.lineno(1),p[2], p[1])
+    p[0] = ast.UnaryExpression(p.lineno(1),p[2], "neg")
 
 #def p_arith_op(p):
 #    '''arith_op : PLUS

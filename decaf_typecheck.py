@@ -7,8 +7,8 @@ class TypeChecker():
         self.tree = tree
         for c in tree.classes:
             for m in c.methods.values():
-                self.check_method(tree,c,m)
-    def check_method(self, tree, cls, mth):
+                self.check_method(c,m)
+    def check_method(self, cls, mth):
         for stmt in mth.body.expressions:
             self.find(stmt, cls, mth)
     def find(self, stmt, cls, mth):
@@ -47,7 +47,11 @@ class TypeChecker():
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
                 elif isinstance(stmt, ast.Return):
-                    pass
+                    if stmt.value.type == None:
+                        self.resolve(stmt.value, cls, mth)
+                    if self.subtype_exists_str(mth.return_type, stmt.value.type) == False:
+                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name)
+                        sys.exit()
                 elif isinstance(stmt, ast.Block):
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
@@ -70,7 +74,7 @@ class TypeChecker():
                         self.find(stmt.left_operand, cls, mth)
                     if stmt.right_operand.type == None:
                         self.find(stmt.right_operand, cls, mth)
-                    f, s = self.binary_type(stmt.operator)
+                    f, _ = self.binary_type(stmt.operator)
                     if f != None:
                         if f == "arith" and (not self.FOI(stmt.left_operand.type) or not self.FOI(stmt.right_operand.type)):
                             print("Error: Arithmetic binary operations must have an int/float on both sides of the operation: Found in method " +mth.name + " in class " + cls.name)
@@ -85,7 +89,25 @@ class TypeChecker():
                         self.find(stmt.left_expression, cls, mth)
                     if stmt.right_expression.type == None:
                         self.find(stmt.right_expression, cls, mth)
-                    self.type_resolve(stmt.left_expression, stmt.right_expression, cls, mth)
+                    if isinstance(stmt.right_expression.type, list):
+                        valid = False;
+                        for item in stmt.right_expression.type:
+                            if isinstance(item, ast.Method) and self.subtype_exists_str(stmt.left_expression.type, item.return_type):
+                                valid = True
+                                stmt.right_expression.type = item.return_type
+                                stmt.right_expression.ref_id = item.id
+                                break
+                            elif self.subtype_exists_str(stmt.left_expression.type, item.return_type):
+                                valid = True
+                                stmt.right_expression.type = item.type
+                                stmt.right_expression.ref_id = item.id
+                                break
+                        if not valid:
+                            print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name)
+                            sys.exit()
+                    if not self.subtype_exists_str(stmt.left_expression.type, stmt.right_expression.type):
+                        print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name)
+                        sys.exit()
                 elif isinstance(stmt, ast.AutoExpression):
                     if stmt.expression.type == None:
                         self.find(stmt.expression, cls, mth)
@@ -93,21 +115,64 @@ class TypeChecker():
                         print("Error: trying to auto increment variable/constant that is not a float/int in " + mth.name + " of class " + cls.name)
                         sys.exit()
                 elif isinstance(stmt, ast.FieldAccessExpression):
-                    if stmt.base.type.__str__()[:14] != "class-literal(":
-                        print("Not class literal in base of field access")
-                    class_name = stmt.base.type.__str__()[14:len(stmt.base.type.__str__()) - 1]
-                    if class_name not in self.tree.class_dict.keys():
-                        print("Not class exists for base of field access expression")
+                    if stmt.base.type == None:
+                        self.find(stmt.base, cls, mth)
+                    sons = None
+                    class_name = None
+                    if stmt.base.type.__str__()[:14] == "class-literal(":
+                        sons = "static"
+                        class_name = stmt.base.type.__str__()[14:len(stmt.base.type.__str__()) - 1]
+                    elif stmt.base.type.__str__()[:4] == "user":
+                        sons = "instance"
+                        class_name = stmt.base.type.__str__()[5:len(stmt.base.type.__str__()) - 1]
                     else:
-                        pass
+                        print("Error: invalid field access base in " + mth.name + " of class " + cls.name)
+                        sys.exit()
+                    if class_name not in self.tree.class_dict.keys():
+                        print("No class exists for base of field access expression")
+                    else:
+                        stmt.type = self.find_field(cls, sons, stmt.fieldName)
+                        if len(stmt.type) == 0:
+                            print("Error: no possible fields found in " + mth.name + " of class " + cls.name)
+                            sys.exit()
+                        elif len(stmt.type) == 1:
+                            stmt.ref_id = stmt.type[0].id
+                            stmt.type = stmt.type[0].type
                 elif isinstance(stmt, ast.MethodCallExpression):
-                    pass
+                    if stmt.base == None:
+                        self.find(stmt.base, cls, mth)
+                    if stmt.base.type[:4] != "user" and stmt.base.type[:13] != "class-literal":
+                        print("Error: invalid base type in method call expression in " + mth.name + " of class " + cls.name)
+                        sys.exit()
+                    st = None
+                    if stmt.base.type[:4] == "user":
+                        st = "instance"
+                    else:
+                        st = "static"
+                    method = self.find_method(cls.name, stmt.arguments, stmt.methodName,st)
+                    if len(method) == 0:
+                        print("Error: no possible fields found in " + mth.name + " of class " + cls.name)
+                        sys.exit()
+                    elif len(method) == 1:
+                        stmt.type = method[0].return_type
+                        stmt.ref_id = method[0].id
+                    else:
+                        stmt.type = method
                 elif isinstance(stmt, ast.NewObjectExpression):
-                    pass
+                    ret = self.find_constructor(stmt.baseClass, stmt.parameters)
+                    if ret == None:
+                        print("Error: no possible constructor found for new object creation in " + mth.name + " of class " + cls.name)
+                        sys.exit()
+                    stmt.type = "user(" + stmt.baseClass + ")"
+                    stmt.ref_id = ret.id
                 elif isinstance(stmt, ast.ThisExpression):
-                    pass
+                    stmt.type = "user(" + str(cls.name) + ")"
                 elif isinstance(stmt, ast.SuperExpression):
-                    pass
+                    parent = cls.super_class_name
+                    if parent == None:
+                        print("Error: referenced super class in class with no super class in " + mth.name + " of class " + cls.name)
+                        sys.exit()
+                    stmt.type = "user(" + str(parent.name) + ")"
                 elif isinstance(stmt, ast.ClassReferenceExpression):
                     pass
             else:
@@ -129,19 +194,130 @@ class TypeChecker():
         if stmt2.type == "boolean" and stmt1.type != "boolean":
             print("Error: trying to assign boolean with type that is not boolean in method " + mth.name + " of class " + cls.name)
             sys.exit()
+        if not self.subtype_exists(stmt1, stmt2):
+            print("Error: invalid assignment due to subtyping not existing" + mth.name + " of class " + cls.name)
+            sys.exit()
         
-    def find_class(self, current_class, target_name, target_type, son):
-        if current_class == None:
-            return None, None
-        sel = self.tree.class_dict.get(current_class)
-        for var in sel.fields.values():
-            if var.name == target_name:
-                return sel, var
-        return self.find_class(sel.super_class_name, target_name, target_type)
-    
-    def subtype_exists(self, left, right):
+    def find_field(self, current_class, SONS, field):
+        curr = current_class
+        if not isinstance(current_class, str):
+            curr = current_class.name
+        ans = []
+        while True:
+            if curr == "" or curr == None:
+                return ans
+            new_class = self.tree.class_dict.get(curr)
+            if new_class == None:
+                return ans
+            fields = new_class.fields
+            for f in fields.values():
+                if f.name == field and f.visibility == "public" and SONS == f.applicability:
+                   ans.append(f)
+            curr = self.tree.class_dict.get(curr).super_class_name
+
+    def find_method(self, curr_class, arguments, method_name, SONS):
+        curr = curr_class
+        ans = []
+        while True:
+            if curr == None or curr == "":
+                print(ans)
+                return ans
+            methods = self.tree.class_dict.get(curr).methods
+            for m in methods.values():
+                if m.name == method_name and m.visibility == "public" and SONS == m.applicability: #should check for which method to choose from
+                    if self.check_parameters(self.convert(m.parameters, m.variable_table), arguments):
+                        ans.append(m)
+            curr = self.tree.class_dict.get(curr).super_class_name
+
+    def find_constructor(self, class_name, arguments):
+        class_dict = self.tree.class_dict
+        for cls in class_dict.values():
+            if cls.name == class_name:
+                for constructor in cls.constructors.values():
+                     if self.check_parameters(self.convert(constructor.parameters, constructor.variable_table), arguments):
+                        return constructor
+        return None
+
+    def check_parameters(self, parameters, arguments):
+        if len(parameters) != len(arguments):
+            return False
+        for ind in range(len(parameters)):
+            if not self.subtype_exists(parameters[ind], arguments[ind]):
+                return False
         return True
-    
+        
+    def convert(self, parameters, variable_table):
+        ans = []
+        for param in parameters:
+            for variable in variable_table:
+                if param == variable.id:
+                    ans.append(variable)
+        return ans
+
+    def subtype_exists(self, left, right):
+        if left.type == right.type:
+            return True
+        if left.type == "float" and right.type == "int":
+            return True
+        if left.type[:4] == "user" and right.type == "null":
+            return True
+        right_type = None
+        left_type = None
+        if right.type[:4] == "user":
+            right_type = right.type[5:len(right.type) - 1]
+            if left.type[:4] != "user":
+                return False
+            else:
+                left_type = left.type[5:len(left.type) - 1]
+        elif right.type[:13] == "class-literal":
+            right_type = right.type[14:len(right.type) - 1]
+            if left.type[:13] != "class-literal":
+                return False
+            else:
+                left_type = left.type[14:len(left.type) - 1]
+        else:
+            print("error")
+            return False
+        while True:
+            parent = self.tree.class_dict.get(right_type).super_class_name
+            if parent == None:
+                return False
+            if parent == left_type:
+                return True
+            right_type = parent
+
+    def subtype_exists_str(self, left, right):
+        if left == right:
+            return True
+        if left == "float" and right == "int":
+            return True
+        if left[:4] == "user" and right == "null":
+            return True
+        right_type = None
+        left_type = None
+        if right[:4] == "user":
+            right_type = right[5:len(right) - 1]
+            if left[:4] != "user":
+                return False
+            else:
+                left_type = left[5:len(left) - 1]
+        elif right[:13] == "class-literal":
+            right_type = right[14:len(right) - 1]
+            if left[:13] != "class-literal":
+                return False
+            else:
+                left_type = left[14:len(left) - 1]
+        else:
+            print("error")
+            return False
+        while True:
+            parent = self.tree.class_dict.get(right_type).super_class_name
+            if parent == None:
+                return False
+            if parent == left_type:
+                return True
+            right_type = parent
+
     def binary_type(self, op):
         if op == "add" or op == "min" or op =="mul" or op == "div":
             return "arith", "op"

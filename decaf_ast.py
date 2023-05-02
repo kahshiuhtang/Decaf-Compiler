@@ -15,9 +15,9 @@ class AST():
     def print(self):
         if self.errors():
             return
-        #for x in self.classes:
-            #x.print()
-            #print("----------------------")
+        for x in self.classes:
+            x.print()
+            print("----------------------")
     def setup(self):
         names = set()
         names.add("In")
@@ -120,7 +120,10 @@ class Class(Node):
 
     def print(self):
         print("Class Name: " + self.name)
-        print("Superclass Name: " + self.super_class_name)
+        if self.super_class_name == None:
+            print("Superclass Name: None")
+        else:
+            print("Superclass Name: " + self.super_class_name)
         print("Fields:")
         for x in self.fields.values():
             print(x)
@@ -163,7 +166,7 @@ class Constructor(Node):
         currTab = copy.deepcopy(self.variable_table)
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], Block):
-                self.addVarTable(block, currTab)
+                self.addVarTable(self.body.expressions[i], currTab)
             elif isinstance(self.body.expressions[i], While):
                 self.searchExpression(self.body.expressions[i].condition, currTab)
                 self.addVarTable(self.body.expressions[i].body, currTab)
@@ -195,27 +198,21 @@ class Constructor(Node):
                     new_curr_table.append(var);
             elif isinstance(block.expressions[i], Block):
                 self.addVarTable(block.expressions[i], new_curr_table)
-                # self.fill(block.expressions[i], new_curr_table)
             elif isinstance(block.expressions[i], While):
                 self.searchExpression(block.expressions[i].condition, new_curr_table)
                 self.addVarTable(block.expressions[i].body, new_curr_table)
-                # self.fill(block.expressions[i].body, new_curr_table)
             elif isinstance(block.expressions[i], For):
                 self.searchExpression(block.expressions[i].initialize, new_curr_table)
                 self.searchExpression(block.expressions[i].loop_condition, new_curr_table)
                 self.searchExpression(block.expressions[i].update_expression, new_curr_table)
                 self.addVarTable(block.expressions[i].body, new_curr_table)
-                # self.fill(block.expressions[i].body, new_curr_table)
             elif isinstance(block.expressions[i], If):
                 self.searchExpression(block.expressions[i].condition, new_curr_table)
                 if block.expressions[i].else_part == None:
                     self.addVarTable(block.expressions[i].then_part, new_curr_table)
-                    # self.fill(block.expressions[i].then_part, new_curr_table)
                 else:
                     self.addVarTable(block.expressions[i].then_part, new_curr_table)
-                    # self.fill(block.expressions[i].then_part, new_curr_table)
                     self.addVarTable(block.expressions[i].else_part, new_curr_table)
-                    # self.fill(block.expressions[i].else_part, new_curr_table)
             elif isinstance(block.expressions[i], Expression):
                 self.searchExpression(block.expressions[i], new_curr_table)
             elif isinstance(block.expressions[i], Return):
@@ -273,7 +270,7 @@ class Method(Node):
         self.name = name
         self.id = _id
         self.containing_class = cont
-        self.visibilty = vis
+        self.visibility = vis
         self.applicability = appl
         self.parameters = params
         self.return_type = ret
@@ -281,7 +278,7 @@ class Method(Node):
         self.body = bod
     
     def __str__(self):
-        print("METHOD: " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibilty + ", " + self.applicability + ", " + self.return_type)
+        print("METHOD: " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibility + ", " + self.applicability + ", " + self.return_type)
         print("Method parameters: ", end ="")
         for x in self.parameters:
             print(x, end = " ")
@@ -303,7 +300,7 @@ class Method(Node):
         currTab = copy.deepcopy(self.variable_table)
         for i in range(len(self.body.expressions)):
             if isinstance(self.body.expressions[i], Block):
-                self.addVarTable(block, currTab)
+                self.addVarTable(self.body.expressions[i], currTab)
             elif isinstance(self.body.expressions[i], While):
                 self.searchExpression(self.body.expressions[i].condition, currTab)
                 self.addVarTable(self.body.expressions[i].body, currTab)
@@ -413,7 +410,7 @@ class Field(Node):
         self.applicability = appl
         self.type = typ
         self.line = line
-    
+
     def __str__(self):
         return "FIELD " + str(self.id) + ", " + self.name + ", " + self.containing_class + ", " + self.visibility + ", " + self.applicability + ", " + self.type
 
@@ -617,7 +614,7 @@ class AssignExpression(Expression):
         self.left_expression = left
         self.right_expression = right
     def __str__(self):
-        return "AssignExpression(" + self.left_expression.__str__() + ", " + self.right_expression.__str__() + ")"
+        return "AssignExpression(" + self.left_expression.__str__() + ", " + self.right_expression.__str__() + ", "+  self.left_expression.type + ", " + self.right_expression.type + ")"
 
 class AutoExpression(Expression):
     def __init__(self, lin , op, exp, pop):
@@ -637,6 +634,7 @@ class FieldAccessExpression(Expression):
         super().__init__(lin, None)
         self.base = base
         self.fieldName = field
+        self.ref_id = None
     def __str__(self):
         if isinstance(self.fieldName, list):
             name = ""
@@ -644,7 +642,7 @@ class FieldAccessExpression(Expression):
                 name += x + ", "
             name = name[:-1]
             return "FieldAccessExpression(" + self.base.__str__() + ", " +  name + ")"
-        return "FieldAccessExpression(" + self.base.__str__() + ", " + self.fieldName.__str__() + ")"
+        return "FieldAccessExpression(" + self.base.__str__() + ", " + self.fieldName.__str__() + ", "+ str(self.ref_id) +")"
 
 class MethodCallExpression(Expression):
     def __init__(self, lin, base, name, args):
@@ -652,6 +650,7 @@ class MethodCallExpression(Expression):
         self.base = base
         self.methodName = name
         self.arguments = args
+        self.ref_id = None
     def __str__(self):
         arguments = self.arguments
         if isinstance(self.arguments, list):
@@ -660,14 +659,14 @@ class MethodCallExpression(Expression):
                 arguments += x.__str__() + ", "
             arguments = arguments[:-2]
             arguments = "(" + arguments + ")"
-
-        return "MethodCallExpression(" + self.base.__str__() + ", " + self.methodName.__str__() + ", "+ arguments +")"
+        return "MethodCallExpression(" + self.base.__str__() + ", " + self.methodName.__str__() + ", "+ arguments +", " + str(self.ref_id) + ")"
 
 class NewObjectExpression(Expression):
     def __init__(self, lin, base, args):
         super().__init__(lin, None)
         self.parameters = args
         self.baseClass = base
+        self.ref_id = None
     def __str__(self):
         params = ""
         if len(self.parameters) > 0:
@@ -677,7 +676,7 @@ class NewObjectExpression(Expression):
             params = "[" + params + "]"
         else:
             params ="[]"
-        return "NewObjectExpression(" + self.baseClass +", " + params+ ")"
+        return "NewObjectExpression(" + self.baseClass +", " + params+ ", "+ str(self.ref_id) +")"
 
 class ThisExpression(Expression):
     def __init__(self, lin):
