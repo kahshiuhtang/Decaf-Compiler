@@ -38,6 +38,9 @@ class bottom extends middle{
     private int ret(){
         return 0;
     }
+    public static string t1(string x){
+
+    }
 }
 class low extends middle{
     static int y;
@@ -50,9 +53,14 @@ class low extends middle{
     }
 }
 class basement extends bottom{
+    public static int t1(int x){
+
+    }
     public top runner(){
         int x;
-        x = this.
+        string n;
+        x = this.y;
+        n = basement.t1(x);
         return null;
     }
 }

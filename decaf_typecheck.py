@@ -118,7 +118,7 @@ class TypeChecker():
                                 stmt.right_expression.type = item.return_type
                                 stmt.right_expression.ref_id = item.id
                                 break
-                            elif self.subtype_exists_str(stmt.left_expression.type, item.return_type):
+                            elif not isinstance(item, ast.Method) and self.subtype_exists_str(stmt.left_expression.type, item.type):
                                 valid = True
                                 stmt.right_expression.type = item.type
                                 stmt.right_expression.ref_id = item.id
