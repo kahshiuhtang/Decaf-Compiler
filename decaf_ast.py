@@ -362,6 +362,7 @@ class Method(Node):
             for elem in reversed(curr_table):
                 if elem.name == expr.val:
                     expr.id = elem.id
+                    expr.type = elem.type
                     return
             if expr.val in self.n:
                 return ClassReferenceExpression(expr.lineNumber, expr.val)
@@ -602,7 +603,7 @@ class BinaryExpression(Expression):
         elif oper == "<":
             return "lt"
         elif oper == ">":
-            return ">"
+            return "gt"
         elif oper == "<=":
             return "leq"
         elif oper == ">=":

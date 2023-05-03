@@ -28,22 +28,22 @@ class TypeChecker():
                             self.find(stm, cls, mth)
                 elif isinstance(stmt, ast.While):
                     if stmt.condition.type == None:
-                        self.resolve(stmt.condition, cls, mth)
+                        self.find(stmt.condition, cls, mth)
                     if stmt.condition.type != "boolean":
                         print("Error: while loop condition is not a boolean in " + mth.name + " of class " + cls.name)
                         sys.exit()
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
                 elif isinstance(stmt, ast.For):
-                    if stmt.intialize != None and stmt.initialize.type == None:
-                        self.resolve(stmt.initialize, cls, mth)
-                    if stmt.loop_condition != None and stmt.loop_condition.type == None:
-                        self.resolve(stmt.loop_condition, cls, mth)
-                    if stmt.loop_condition.type != "boolean": # Empty thing in the ; ; parts of for loop?
-                        print("Error: while loop condition is not a boolean in " + mth.name + " of class " + cls.name)
+                    if len(stmt.initialize) != 0 and stmt.initialize[0].type == None:
+                        self.find(stmt.initialize[0], cls, mth)
+                    if len(stmt.loop_condition) != 0 and stmt.loop_condition[0].type == None:
+                        self.find(stmt.loop_condition[0], cls, mth)
+                    if len(stmt.loop_condition) != 0 and stmt.loop_condition[0].type != "boolean": 
+                        print("Error: for loop condition is not a boolean in " + mth.name + " of class " + cls.name)
                         sys.exit()
-                    if stmt.update_expression != None and stmt.update_expression.type == None:
-                        self.resolve(stmt.update_expression, cls, mth)
+                    if len(stmt.update_expression) != None and stmt.update_expression[0].type == None:
+                        self.resolve(stmt.update_expression[0], cls, mth)
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
                 elif isinstance(stmt, ast.Return):
@@ -68,13 +68,26 @@ class TypeChecker():
                     if stmt.type == None:
                         self.resolve(stmt, cls, mth)
                 elif isinstance(stmt, ast.UnaryExpression):
-                    pass
+                    if stmt.operand.type == None:
+                        self.find(stmt.operand, cls, mth)
+                    if stmt.operator == "neg":
+                        if stmt.operand.type != "boolean":
+                            print("Error: Neg unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name)
+                            sys.exit()
+                        stmt.type = "boolean"
+                    elif stmt.operator == "-":
+                        if stmt.operand.type != "float" and stmt.operand.type != "int" :
+                            print("Error: Uminus unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name)
+                            sys.exit()
+                        stmt.type = stmt.operand.type
+                    else:
+                        print(stmt.operator)
                 elif isinstance(stmt, ast.BinaryExpression):
                     if stmt.left_operand.type == None:
                         self.find(stmt.left_operand, cls, mth)
                     if stmt.right_operand.type == None:
                         self.find(stmt.right_operand, cls, mth)
-                    f, _ = self.binary_type(stmt.operator)
+                    f, s = self.binary_type(stmt.operator)
                     if f != None:
                         if f == "arith" and (not self.FOI(stmt.left_operand.type) or not self.FOI(stmt.right_operand.type)):
                             print("Error: Arithmetic binary operations must have an int/float on both sides of the operation: Found in method " +mth.name + " in class " + cls.name)
@@ -84,6 +97,14 @@ class TypeChecker():
                         if f == "bool" and (stmt.left_operand.type != "boolean" or stmt.right_operand.type != "boolean"):
                             print("Error: Boolean binary operations must have a boolean type on both sides: Found in method " +mth.name + " in class " + cls.name)
                             sys.exit()
+                    if f == "bool":
+                        stmt.type = "boolean"
+                    elif s == "comp":
+                        stmt.type = "boolean"
+                    elif stmt.right_operand.type =="float" or stmt.left_operand.type == "float":
+                        stmt.type = "float"
+                    else:
+                        stmt.type = "int"
                 elif isinstance(stmt, ast.AssignExpression):
                     if stmt.left_expression.type == None:
                         self.find(stmt.left_expression, cls, mth)
@@ -106,7 +127,7 @@ class TypeChecker():
                             print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name)
                             sys.exit()
                     if not self.subtype_exists_str(stmt.left_expression.type, stmt.right_expression.type):
-                        print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name)
+                        print("Error: subtype does not exist in assignment expression: Found in method " + mth.name + " in class " + cls.name)
                         sys.exit()
                 elif isinstance(stmt, ast.AutoExpression):
                     if stmt.expression.type == None:
@@ -139,7 +160,7 @@ class TypeChecker():
                             stmt.ref_id = stmt.type[0].id
                             stmt.type = stmt.type[0].type
                 elif isinstance(stmt, ast.MethodCallExpression):
-                    if stmt.base == None:
+                    if stmt.base.type == None:
                         self.find(stmt.base, cls, mth)
                     if stmt.base.type[:4] != "user" and stmt.base.type[:13] != "class-literal":
                         print("Error: invalid base type in method call expression in " + mth.name + " of class " + cls.name)
@@ -159,7 +180,7 @@ class TypeChecker():
                     else:
                         stmt.type = method
                 elif isinstance(stmt, ast.NewObjectExpression):
-                    ret = self.find_constructor(stmt.baseClass, stmt.parameters)
+                    ret = self.find_constructor(stmt.baseClass, stmt.parameters, cls.name)
                     if ret == None:
                         print("Error: no possible constructor found for new object creation in " + mth.name + " of class " + cls.name)
                         sys.exit()
@@ -172,7 +193,7 @@ class TypeChecker():
                     if parent == None:
                         print("Error: referenced super class in class with no super class in " + mth.name + " of class " + cls.name)
                         sys.exit()
-                    stmt.type = "user(" + str(parent.name) + ")"
+                    stmt.type = "user(" + str(parent) + ")"
                 elif isinstance(stmt, ast.ClassReferenceExpression):
                     pass
             else:
@@ -203,6 +224,7 @@ class TypeChecker():
         if not isinstance(current_class, str):
             curr = current_class.name
         ans = []
+        first = True
         while True:
             if curr == "" or curr == None:
                 return ans
@@ -211,30 +233,32 @@ class TypeChecker():
                 return ans
             fields = new_class.fields
             for f in fields.values():
-                if f.name == field and f.visibility == "public" and SONS == f.applicability:
+                if f.name == field and (f.visibility == "public" or first) and SONS == f.applicability:
                    ans.append(f)
+            first = False
             curr = self.tree.class_dict.get(curr).super_class_name
 
     def find_method(self, curr_class, arguments, method_name, SONS):
         curr = curr_class
         ans = []
+        first = True
         while True:
             if curr == None or curr == "":
-                print(ans)
                 return ans
             methods = self.tree.class_dict.get(curr).methods
             for m in methods.values():
-                if m.name == method_name and m.visibility == "public" and SONS == m.applicability: #should check for which method to choose from
+                if m.name == method_name and (m.visibility == "public" or first) and SONS == m.applicability: #should check for which method to choose from
                     if self.check_parameters(self.convert(m.parameters, m.variable_table), arguments):
                         ans.append(m)
+            first = False
             curr = self.tree.class_dict.get(curr).super_class_name
 
-    def find_constructor(self, class_name, arguments):
+    def find_constructor(self, class_name, arguments, current_class_name):
         class_dict = self.tree.class_dict
         for cls in class_dict.values():
             if cls.name == class_name:
                 for constructor in cls.constructors.values():
-                     if self.check_parameters(self.convert(constructor.parameters, constructor.variable_table), arguments):
+                     if (constructor.visibility == "public" or current_class_name == class_name) and self.check_parameters(self.convert(constructor.parameters, constructor.variable_table), arguments):
                         return constructor
         return None
 
@@ -276,7 +300,6 @@ class TypeChecker():
             else:
                 left_type = left.type[14:len(left.type) - 1]
         else:
-            print("error")
             return False
         while True:
             parent = self.tree.class_dict.get(right_type).super_class_name
@@ -293,6 +316,8 @@ class TypeChecker():
             return True
         if left[:4] == "user" and right == "null":
             return True
+        if right == "boolean":
+            return False
         right_type = None
         left_type = None
         if right[:4] == "user":
@@ -308,7 +333,6 @@ class TypeChecker():
             else:
                 left_type = left[14:len(left) - 1]
         else:
-            print("error")
             return False
         while True:
             parent = self.tree.class_dict.get(right_type).super_class_name
