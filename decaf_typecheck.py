@@ -11,12 +11,13 @@ class TypeChecker():
     def check_method(self, cls, mth):
         for stmt in mth.body.expressions:
             self.find(stmt, cls, mth)
+
     def find(self, stmt, cls, mth):
         if not isinstance(stmt, list): 
             if isinstance(stmt, ast.Statement):
                 if isinstance(stmt, ast.If):
                     if stmt.condition.type == None:
-                        self.resolve(stmt.condition, cls, mth)
+                        self.find(stmt.condition, cls, mth)
                     if stmt.condition.type != "boolean":
                         print("Error: if condition is not a boolean in " + mth.name + " of class " + cls.name)
                         sys.exit()
@@ -43,15 +44,21 @@ class TypeChecker():
                         print("Error: for loop condition is not a boolean in " + mth.name + " of class " + cls.name)
                         sys.exit()
                     if len(stmt.update_expression) != None and stmt.update_expression[0].type == None:
-                        self.resolve(stmt.update_expression[0], cls, mth)
+                        self.find(stmt.update_expression[0], cls, mth)
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
                 elif isinstance(stmt, ast.Return):
-                    if stmt.value.type == None:
-                        self.resolve(stmt.value, cls, mth)
-                    if self.subtype_exists_str(mth.return_type, stmt.value.type) == False:
+                    if stmt.value == "None" or stmt.value == None:
+                        stmt.type = "void"
+                    if not isinstance(stmt.value, str) and stmt.value.type == None:
+                        self.find(stmt.value, cls, mth)
+                    if not isinstance(stmt.value, str) and self.subtype_exists_str(mth.return_type, stmt.value.type) == False:
                         print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name)
                         sys.exit()
+                    if isinstance(stmt.value, str) and self.subtype_exists_str(mth.return_type, stmt.type) == False:
+                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name)
+                        sys.exit()
+
                 elif isinstance(stmt, ast.Block):
                     for stm in stmt.body.expressions:
                         self.find(stm, cls, mth)
@@ -152,7 +159,7 @@ class TypeChecker():
                     if class_name not in self.tree.class_dict.keys():
                         print("No class exists for base of field access expression")
                     else:
-                        stmt.type = self.find_field(cls, sons, stmt.fieldName)
+                        stmt.type = self.find_field(class_name, sons, stmt.fieldName)
                         if len(stmt.type) == 0:
                             print("Error: no possible fields found in " + mth.name + " of class " + cls.name)
                             sys.exit()

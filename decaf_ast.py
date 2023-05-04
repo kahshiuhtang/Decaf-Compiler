@@ -501,7 +501,7 @@ class Return(Statement):
         super().__init__(line)
         self.value = val
     def __str__(self):
-        if self.value == None:
+        if self.value == None or self.value == "None":
             return "Return()"
         return "Return(" + self.value.__str__() + ")"
         

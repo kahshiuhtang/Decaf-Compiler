@@ -26,6 +26,7 @@ class middle extends top{
 }
 class bottom extends middle{
     static int x;
+    private int h;
     public string main(){
         int i;
         for(i = 0; i < 10; i++){
@@ -50,8 +51,13 @@ class low extends middle{
     }
 }
 class basement extends bottom{
-    public top runner(){
-        return null;
+    private int floater;
+    private boolean made;
+    public int runner(){
+        if(this.made == true){
+            return 0;
+        }
+        return super.h;
     }
 }
 class no_rel extends middle{
