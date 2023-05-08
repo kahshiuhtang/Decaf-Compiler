@@ -1,7 +1,0 @@
-class a {
-	a(int x, float y) { }
-	int x(){
-		a y;
-		y = new a(10, 20.0);
-	}
-}

@@ -1,5 +1,6 @@
 import decaf_ast as ast
 import sys
+# Look at 24/25, 38, rfib, Bank, 
 class TypeChecker():
     def __init__(self):
         pass
@@ -10,58 +11,70 @@ class TypeChecker():
                 self.check_method(c,m)
     def check_method(self, cls, mth):
         for stmt in mth.body.expressions:
-            self.find(stmt, cls, mth)
+            if not isinstance(stmt, list):
+                 self.find(stmt, cls, mth, stmt.lineNumber)
+            else:
+                self.find(stmt, cls, mth, 0)
 
-    def find(self, stmt, cls, mth):
+
+    def find(self, stmt, cls, mth, line):
         if not isinstance(stmt, list): 
+            if line == 0:
+                line = stmt.lineNumber
             if isinstance(stmt, ast.Statement):
                 if isinstance(stmt, ast.If):
                     if stmt.condition.type == None:
-                        self.find(stmt.condition, cls, mth)
+                        self.find(stmt.condition, cls, mth, line)
                     if stmt.condition.type != "boolean":
-                        print("Error: if condition is not a boolean in " + mth.name + " of class " + cls.name)
+                        print("Error: if condition is not a boolean in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     if stmt.then_part != None:
-                        for stm in stmt.then_part.expressions:
-                            self.find(stm, cls, mth)
+                        if isinstance(stmt.then_part.expressions, list):
+                            for stm in stmt.then_part.expressions:
+                                self.find(stm, cls, mth, stm.lineNumber)
+                        else:
+                           self.find(stmt.then_part.expressions, cls, mth, stmt.lineNumber) 
                     if stmt.else_part != None:
-                        for stm in stmt.else_part.expressions:
-                            self.find(stm, cls, mth)
+                        if isinstance(stmt.else_part.expressions, list):
+                            for stm in stmt.else_part.expressions:
+                                self.find(stm, cls, mth, stm.lineNumber)
+                        else:
+                            self.find(stmt.else_part.expressions, cls, mth, stmt.lineNumber) 
                 elif isinstance(stmt, ast.While):
                     if stmt.condition.type == None:
-                        self.find(stmt.condition, cls, mth)
+                        self.find(stmt.condition, cls, mth, line)
                     if stmt.condition.type != "boolean":
-                        print("Error: while loop condition is not a boolean in " + mth.name + " of class " + cls.name)
+                        print("Error: while loop condition is not a boolean in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     for stm in stmt.body.expressions:
-                        self.find(stm, cls, mth)
+                        self.find(stm, cls, mth, stm.lineNumber)
                 elif isinstance(stmt, ast.For):
                     if len(stmt.initialize) != 0 and stmt.initialize[0].type == None:
-                        self.find(stmt.initialize[0], cls, mth)
+                        self.find(stmt.initialize[0], cls, mth, line)
                     if len(stmt.loop_condition) != 0 and stmt.loop_condition[0].type == None:
-                        self.find(stmt.loop_condition[0], cls, mth)
+                        self.find(stmt.loop_condition[0], cls, mth, line)
                     if len(stmt.loop_condition) != 0 and stmt.loop_condition[0].type != "boolean": 
-                        print("Error: for loop condition is not a boolean in " + mth.name + " of class " + cls.name)
+                        print("Error: for loop condition is not a boolean in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     if len(stmt.update_expression) != None and stmt.update_expression[0].type == None:
-                        self.find(stmt.update_expression[0], cls, mth)
+                        self.find(stmt.update_expression[0], cls, mth, line)
                     for stm in stmt.body.expressions:
-                        self.find(stm, cls, mth)
+                        self.find(stm, cls, mth, stm.lineNumber)
                 elif isinstance(stmt, ast.Return):
                     if stmt.value == "None" or stmt.value == None:
                         stmt.type = "void"
                     if not isinstance(stmt.value, str) and stmt.value.type == None:
-                        self.find(stmt.value, cls, mth)
+                        self.find(stmt.value, cls, mth, line)
                     if not isinstance(stmt.value, str) and self.subtype_exists_str(mth.return_type, stmt.value.type) == False:
-                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name)
+                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name + " in line number " +  str(line))
                         sys.exit()
                     if isinstance(stmt.value, str) and self.subtype_exists_str(mth.return_type, stmt.type) == False:
-                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name)
+                        print("Error: return statement type is not subtype of method return type " + mth.name + " of class " + cls.name + " in line number " +str(line))
                         sys.exit()
 
                 elif isinstance(stmt, ast.Block):
                     for stm in stmt.body.expressions:
-                        self.find(stm, cls, mth)
+                        self.find(stm, cls, mth, stm.lineNumber)
                 elif isinstance(stmt, ast.Break):
                     pass
                 elif isinstance(stmt, ast.Continue):
@@ -76,33 +89,34 @@ class TypeChecker():
                         self.resolve(stmt, cls, mth)
                 elif isinstance(stmt, ast.UnaryExpression):
                     if stmt.operand.type == None:
-                        self.find(stmt.operand, cls, mth)
+                        self.find(stmt.operand, cls, mth, line)
                     if stmt.operator == "neg":
                         if stmt.operand.type != "boolean":
-                            print("Error: Neg unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name)
+                            print("Error: Neg unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name + " in line number " + str(line))
                             sys.exit()
                         stmt.type = "boolean"
                     elif stmt.operator == "-":
                         if stmt.operand.type != "float" and stmt.operand.type != "int" :
-                            print("Error: Uminus unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name)
+                            print("Error: Uminus unary expression cannot be applied to a variable that is not a boolean. Found in method " + mth.name + " in class " + cls.name + " in line number " + str(line))
                             sys.exit()
                         stmt.type = stmt.operand.type
                     else:
                         print(stmt.operator)
                 elif isinstance(stmt, ast.BinaryExpression):
                     if stmt.left_operand.type == None:
-                        self.find(stmt.left_operand, cls, mth)
+                        self.find(stmt.left_operand, cls, mth, line)
                     if stmt.right_operand.type == None:
-                        self.find(stmt.right_operand, cls, mth)
+                        self.find(stmt.right_operand, cls, mth, line)
                     f, s = self.binary_type(stmt.operator)
                     if f != None:
                         if f == "arith" and (not self.FOI(stmt.left_operand.type) or not self.FOI(stmt.right_operand.type)):
-                            print("Error: Arithmetic binary operations must have an int/float on both sides of the operation: Found in method " +mth.name + " in class " + cls.name)
+                            print("Error: Arithmetic binary operations must have an int/float on both sides of the operation: Found in method " +mth.name + " in class " + cls.name + " in line number " +str(line))
                             sys.exit()
-                        if f == "eq":
-                            pass
+                        if f == "eq" and not self.subtype_exists(stmt.left_operand, stmt.right_operand):
+                            print("Error, cannot equality compare different types" + " in line number " +str(line))
+                            sys.exit()
                         if f == "bool" and (stmt.left_operand.type != "boolean" or stmt.right_operand.type != "boolean"):
-                            print("Error: Boolean binary operations must have a boolean type on both sides: Found in method " +mth.name + " in class " + cls.name)
+                            print("Error: Boolean binary operations must have a boolean type on both sides: Found in method " +mth.name + " in class " + cls.name + " in line number " + str(line))
                             sys.exit()
                     if f == "bool":
                         stmt.type = "boolean"
@@ -114,9 +128,9 @@ class TypeChecker():
                         stmt.type = "int"
                 elif isinstance(stmt, ast.AssignExpression):
                     if stmt.left_expression.type == None:
-                        self.find(stmt.left_expression, cls, mth)
+                        self.find(stmt.left_expression, cls, mth, line)
                     if stmt.right_expression.type == None:
-                        self.find(stmt.right_expression, cls, mth)
+                        self.find(stmt.right_expression, cls, mth, line)
                     if isinstance(stmt.right_expression.type, list):
                         valid = False;
                         for item in stmt.right_expression.type:
@@ -131,20 +145,21 @@ class TypeChecker():
                                 stmt.right_expression.ref_id = item.id
                                 break
                         if not valid:
-                            print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name)
+                            print("Error: subtype does not exist in assignment expression: Found in method " +mth.name + " in class " + cls.name + " in line number " + str(line))
                             sys.exit()
+                    print(stmt)
                     if not self.subtype_exists_str(stmt.left_expression.type, stmt.right_expression.type):
-                        print("Error: subtype does not exist in assignment expression: Found in method " + mth.name + " in class " + cls.name)
+                        print("Error: subtype does not exist in assignment expression: Found in method " + mth.name + " in class " + cls.name + " in line number " +str(line))
                         sys.exit()
                 elif isinstance(stmt, ast.AutoExpression):
                     if stmt.expression.type == None:
-                        self.find(stmt.expression, cls, mth)
+                        self.find(stmt.expression, cls, mth, line)
                     if stmt.expression.type != "float" and stmt.expression.type != "int":
-                        print("Error: trying to auto increment variable/constant that is not a float/int in " + mth.name + " of class " + cls.name)
+                        print("Error: trying to auto increment variable/constant that is not a float/int in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                 elif isinstance(stmt, ast.FieldAccessExpression):
                     if stmt.base.type == None:
-                        self.find(stmt.base, cls, mth)
+                        self.find(stmt.base, cls, mth, line)
                     sons = None
                     class_name = None
                     if stmt.base.type.__str__()[:14] == "class-literal(":
@@ -154,23 +169,23 @@ class TypeChecker():
                         sons = "instance"
                         class_name = stmt.base.type.__str__()[5:len(stmt.base.type.__str__()) - 1]
                     else:
-                        print("Error: invalid field access base in " + mth.name + " of class " + cls.name)
+                        print("Error: invalid field access base in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     if class_name not in self.tree.class_dict.keys():
-                        print("No class exists for base of field access expression")
+                        print("No class exists for base of field access expression" + " in line number " + str(line))
                     else:
                         stmt.type = self.find_field(class_name, sons, stmt.fieldName)
                         if len(stmt.type) == 0:
-                            print("Error: no possible fields found in " + mth.name + " of class " + cls.name)
+                            print("Error: no possible fields found in " + mth.name + " of class " + cls.name + " in line number " +str(line))
                             sys.exit()
                         elif len(stmt.type) == 1:
                             stmt.ref_id = stmt.type[0].id
                             stmt.type = stmt.type[0].type
                 elif isinstance(stmt, ast.MethodCallExpression):
                     if stmt.base.type == None:
-                        self.find(stmt.base, cls, mth)
+                        self.find(stmt.base, cls, mth, line)
                     if stmt.base.type[:4] != "user" and stmt.base.type[:13] != "class-literal":
-                        print("Error: invalid base type in method call expression in " + mth.name + " of class " + cls.name)
+                        print("Error: invalid base type in method call expression in " + mth.name + " of class " + cls.name + " in line number " +str(line))
                         sys.exit()
                     st = None
                     if stmt.base.type[:4] == "user":
@@ -179,7 +194,7 @@ class TypeChecker():
                         st = "static"
                     method = self.find_method(cls.name, stmt.arguments, stmt.methodName,st)
                     if len(method) == 0:
-                        print("Error: no possible fields found in " + mth.name + " of class " + cls.name)
+                        print("Error: no possible fields found in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     elif len(method) == 1:
                         stmt.type = method[0].return_type
@@ -189,7 +204,7 @@ class TypeChecker():
                 elif isinstance(stmt, ast.NewObjectExpression):
                     ret = self.find_constructor(stmt.baseClass, stmt.parameters, cls.name)
                     if ret == None:
-                        print("Error: no possible constructor found for new object creation in " + mth.name + " of class " + cls.name)
+                        print("Error: no possible constructor found for new object creation in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     stmt.type = "user(" + stmt.baseClass + ")"
                     stmt.ref_id = ret.id
@@ -198,7 +213,7 @@ class TypeChecker():
                 elif isinstance(stmt, ast.SuperExpression):
                     parent = cls.super_class_name
                     if parent == None:
-                        print("Error: referenced super class in class with no super class in " + mth.name + " of class " + cls.name)
+                        print("Error: referenced super class in class with no super class in " + mth.name + " of class " + cls.name + " in line number " + str(line))
                         sys.exit()
                     stmt.type = "user(" + str(parent) + ")"
                 elif isinstance(stmt, ast.ClassReferenceExpression):
@@ -214,16 +229,16 @@ class TypeChecker():
 
     def type_resolve(self, stmt1, stmt2, cls, mth):
         if stmt2.type == "int" and stmt1.type != "float" and stmt1.type != "int":
-            print("Error: trying to assign int with type that is not int/float in method " + mth.name + " of class " + cls.name)
+            print("Error: trying to assign int with type that is not int/float in method " + mth.name + " of class " + cls.name+ " in line number " +str(line))
             sys.exit()
         if stmt2.type == "float" and stmt1.type != "float":
-            print("Error: trying to assign float to  type that is not float in method" + mth.name + " of class " + cls.name)
+            print("Error: trying to assign float to  type that is not float in method" + mth.name + " of class " + cls.name+ " in line number " + str(line))
             sys.exit()
         if stmt2.type == "boolean" and stmt1.type != "boolean":
-            print("Error: trying to assign boolean with type that is not boolean in method " + mth.name + " of class " + cls.name)
+            print("Error: trying to assign boolean with type that is not boolean in method " + mth.name + " of class " + cls.name+ " in line number " +str(line))
             sys.exit()
         if not self.subtype_exists(stmt1, stmt2):
-            print("Error: invalid assignment due to subtyping not existing" + mth.name + " of class " + cls.name)
+            print("Error: invalid assignment due to subtyping not existing" + mth.name + " of class " + cls.name + " in line number " + str(line))
             sys.exit()
         
     def find_field(self, current_class, SONS, field):

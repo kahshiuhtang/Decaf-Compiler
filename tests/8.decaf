@@ -1,8 +1,0 @@
-class a {
-	int x(float fl, List x) {
-		int a;
-		while(a) {
-
-		}
-	}
-}

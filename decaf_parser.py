@@ -280,6 +280,7 @@ def p_stmt(p):
             p[0] = ast.If(p.lineno(1), p[3], ast.Block(p.lineno(1), p[5]), ast.Block(p.lineno(1), p[7]))
     elif p[1] == 'return':
         p[0] = p[2]
+        p[0].lineNumber = p.lineno(1)
     else:
         p[0] = p[1]
 
@@ -313,9 +314,9 @@ def p_return_val(p):
     if p[1] == None:
         p[0] =  ast.Return(p.lineno(1), "None")
     elif p[1] == "return":
-        p[0] = ast.Return(p.lineno(1), "None")
+        p[0] = ast.Return(p.lineno(0), "None")
     else:
-        p[0] =  ast.Return(p.lineno(1), p[1])
+        p[0] =  ast.Return(p[1].lineNumber, p[1])
 
 def p_literal(p):
     '''literal : INT_CONST
@@ -382,7 +383,7 @@ def p_field_access(p):
     '''field_access : primary DOT ID
                     | ID'''
     if len(p) > 2:
-        p[0] = ast.FieldAccessExpression(p.lineno(1), p[1], p[3])
+        p[0] = ast.FieldAccessExpression(p.lineno(2), p[1], p[3])
     else:
         p[0] = ast.VarExpression(p.lineno(1), 0, p[1]) # IS THIS CORRECT?
 
@@ -406,11 +407,11 @@ def p_assign(p):
               | lhs DECREMENT
               | DECREMENT lhs'''
     if p[2] == '=':
-        p[0] = ast.AssignExpression(p.lineno(1), p[1], p[3])
+        p[0] = ast.AssignExpression(p.lineno(2), p[1], p[3])
     elif p[2] == '++':
-        p[0] = ast.AutoExpression(p.lineno(1),'+', p[1],"post")
+        p[0] = ast.AutoExpression(p.lineno(2),'+', p[1],"post")
     elif p[2] == '--':
-        p[0] = ast.AutoExpression(p.lineno(1),'-', p[1],"post")
+        p[0] = ast.AutoExpression(p.lineno(2),'-', p[1],"post")
     elif p[1] == '++':
         p[0] = ast.AutoExpression(p.lineno(1),'+', p[1],"pre")
     elif p[1] == '--':  
@@ -425,7 +426,7 @@ def p_assign(p):
 
 def p_add_expr(p):
     'expr : expr PLUS expr'
-    p[0] = ast.BinaryExpression(p.lineno, p[1], p[2], p[3])
+    p[0] = ast.BinaryExpression(p.lineno(1), p[1], p[2], p[3])
 
 def p_sub_expr(p):
     'expr : expr MINUS expr'
@@ -519,7 +520,7 @@ def p_empty(p):
 def p_error(p):
     print()
     if p:
-        print("Syntax error at token,", p.type, ", line", p.lineno)
+        print("Syntax error at token,", p.type, ", line", p.lineno(0))
     else:
         print("Syntax error at EOF")
     print()
