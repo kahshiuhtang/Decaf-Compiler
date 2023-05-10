@@ -300,7 +300,6 @@ class TypeChecker():
         if len(parameters) != len(arguments):
             return False
         for ind in range(len(parameters)):
-            print(arguments[0])
             if not self.subtype_exists(parameters[ind], arguments[ind]):
                 return False
         return True

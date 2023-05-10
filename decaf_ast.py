@@ -1,6 +1,7 @@
 import sys
 import copy 
 import decaf_typecheck as tc
+import decaf_codegen as cg
 class AST():
     def __init__(self, classes):
         self.classes = classes
@@ -11,6 +12,8 @@ class AST():
         self.setup()
         self.typechecker = tc.TypeChecker()
         self.typechecker.check(self) 
+        self.generator = cg.CodeGenerator(self)
+        self.generator.generate()
         
     def print(self):
         if self.errors():

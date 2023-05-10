@@ -16,7 +16,7 @@ precedence = (('right', 'ASSIGN'),
 def p_program(p):
     'program : class_decl_list'
     ans = ast.AST(p[1])
-    ans.print()
+    # ans.print()
     return ans
 
 def p_class_decl_list(p):
