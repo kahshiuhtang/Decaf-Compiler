@@ -176,18 +176,88 @@ class Constructor(Node):
                 self.searchExpression(self.body.expressions[i].update_expression, currTab)
                 self.addVarTable(self.body.expressions[i].body, currTab)
             elif isinstance(self.body.expressions[i], If):
-                self.searchExpression(self.body.expressions[i].condition, currTab)
+                ret2 = self.searchExpression(self.body.expressions[i].condition, currTab)
                 if self.body.expressions[i].else_part == None:
                     self.addVarTable(self.body.expressions[i].then_part, currTab)
                 else:
                     self.addVarTable(self.body.expressions[i].then_part, currTab)
                     self.addVarTable(self.body.expressions[i].else_part, currTab)
             elif isinstance(self.body.expressions[i], Expression):
-                self.searchExpression(self.body.expressions[i], currTab)
+                ret = self.searchExpression(self.body.expressions[i], currTab)
+            elif isinstance(self.body.expressions[i], Return):
+                ret = self.searchExpression(self.body.expressions[i].value, currTab)
     def addVarTable(self, block, curr_table):
         if not isinstance(block, Block) or not isinstance(block.expressions, list):
+            new_curr_table = copy.deepcopy(curr_table)
             if isinstance(block, Expression):
                 self.searchExpression(block, curr_table)
+            elif isinstance(block, Block):
+                if isinstance(block.expressions, list):
+                    for i in range(len(block.expressions)):
+                        if isinstance(block.expressions[i], list):
+                            for x in block.expressions[i][1]:
+                                var = Variable(x, len(self.variable_table) + 1, "local", block.expressions[i][0])
+                                self.variable_table.append(var)
+                                new_curr_table.append(var);
+                        elif isinstance(block.expressions[i], Block):
+                            self.addVarTable(block.expressions[i], new_curr_table)
+                        elif isinstance(block.expressions[i], While):
+                            self.searchExpression(block.expressions[i].condition, new_curr_table)
+                            self.addVarTable(block.expressions[i].body, new_curr_table)
+                        elif isinstance(block.expressions[i], For):
+                            self.searchExpression(block.expressions[i].initialize, new_curr_table)
+                            self.searchExpression(block.expressions[i].loop_condition, new_curr_table)
+                            self.searchExpression(block.expressions[i].update_expression, new_curr_table)
+                            self.addVarTable(block.expressions[i].body, new_curr_table)
+                        elif isinstance(block.expressions[i], If):
+                            self.searchExpression(block.expressions[i].condition, new_curr_table)
+                            if block.expressions[i].else_part == None:
+                                self.addVarTable(block.expressions[i].then_part, new_curr_table)
+                            else:
+                                self.addVarTable(block.expressions[i].then_part, new_curr_table)
+                                self.addVarTable(block.expressions[i].else_part, new_curr_table)
+                        elif isinstance(block.expressions[i], Expression):
+                            self.searchExpression(block.expressions[i], new_curr_table)
+                        elif isinstance(block.expressions[i], Return):
+                            self.searchExpression(block.expressions[i].value, new_curr_table)
+                elif isinstance(block.expressions, While):
+                    self.searchExpression(block.expressions.condition, new_curr_table)
+                    self.addVarTable(block.expressions.body, new_curr_table)
+                elif isinstance(block.expressions, For):
+                    self.searchExpression(block.expressions.initialize, new_curr_table)
+                    self.searchExpression(block.expressions.loop_condition, new_curr_table)
+                    self.searchExpression(block.expressions.update_expression, new_curr_table)
+                    self.addVarTable(block.expressions.body, new_curr_table)
+                elif isinstance(block.expressions, If):
+                    self.searchExpression(block.expressions.condition, new_curr_table)
+                    if block.expressions.else_part == None:
+                        self.addVarTable(block.expressions.then_part, new_curr_table)
+                    else:
+                        self.addVarTable(block.expressions.then_part, new_curr_table)
+                        self.addVarTable(block.expressions.else_part, new_curr_table)
+                elif isinstance(block.expressions, Expression):
+                    self.searchExpression(block.expressions, new_curr_table)
+                elif isinstance(block.expressions, Return):
+                    self.searchExpression(block.expressions.value, new_curr_table)
+            elif isinstance(block, While):
+                self.searchExpression(block.condition, new_curr_table)
+                self.addVarTable(block.body, new_curr_table)
+            elif isinstance(block, For):
+                self.searchExpression(block.initialize, new_curr_table)
+                self.searchExpression(block.loop_condition, new_curr_table)
+                self.searchExpression(block.update_expression, new_curr_table)
+                self.addVarTable(block.body, new_curr_table)
+            elif isinstance(block, If):
+                self.searchExpression(block.condition, new_curr_table)
+                if block.else_part == None:
+                    self.addVarTable(block.then_part, new_curr_table)
+                else:
+                    self.addVarTable(block.then_part, new_curr_table)
+                    self.addVarTable(block.else_part, new_curr_table)
+            elif isinstance(block, Expression):
+                self.searchExpression(block, new_curr_table)
+            elif isinstance(block, Return):
+                self.searchExpression(block.value, new_curr_table)
             return
         new_curr_table = copy.deepcopy(curr_table)
         for i in range(len(block.expressions)):
@@ -229,8 +299,9 @@ class Constructor(Node):
                     expr.type = elem.type
                     return
             if expr.val in self.n:
-                return ClassReferenceExpression(expr.lineNumber, expr.val)
-            print("Error: Unfound reference in constructor with variable: " + expr.val)
+                ans = ClassReferenceExpression(expr.lineNumber, expr.val)
+                return 
+            print("Error: Unfound reference in " + self.name +  " method: variable " + expr.val)
             sys.exit()
         elif isinstance(expr, UnaryExpression):
             self.searchExpression(expr.operand, curr_table)
