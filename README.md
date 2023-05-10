@@ -17,7 +17,8 @@
 * Not my parser, checker or lexer code, used Professor Kane's parser, AST add-ons are part of parser is the only part that is mine
 
 ##### decaf_typecheck.py
-    - Strictly used for the rules
+    - Strictly used for the enforcing type rules
+    - Runs after the building of AST
 
 TypeChecking Methods:
 - Fill out AST

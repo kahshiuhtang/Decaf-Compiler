@@ -518,9 +518,8 @@ def p_empty(p):
     pass
 
 def p_error(p):
-    print()
     if p:
-        print("Syntax error at token,", p.type, ", line", p.lineno(0))
+        print("Syntax error at token,", p.type, ", line", p.lineno)
     else:
         print("Syntax error at EOF")
     print()
