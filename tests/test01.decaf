@@ -3,7 +3,7 @@ class tester{
     private int i2;
     public int main(int x, int y){
         float a, b;
-        if(2 < 3){
+        if(2 == 3){
             return 1;
         }
         if(a == b){
