@@ -42,15 +42,33 @@ class CodeGenerator():
             pass
         elif isinstance(stmt, ast.If):
             self.machine.capp(self.machine.label(" # If Statement"), t) 
-            self.write(stmt.condition, args, temp, meth, t)
+            r1 = self.write(stmt.condition, args, temp, meth, t)
+            l1 = self.machine.label()
+            l2 = self.machine.label()
+            l3 = self.machine.label()
+            self.machine.capp(mc.bz(r1, l2))
+            self.machine.capp(l1)
+            self.write(stmt.then_part, args, temp, meth, t)
+            self.machine.capp(mc.jmp(l3))
+            self.machine.capp(l2)   
+            self.write(stmt.else_part, args, temp, meth, t)
+            self.machine.capp(l3)
         elif isinstance(stmt, ast.While):
-            self.machine.capp(self.machine.label(" # While Loop Statement"), t) 
+            loop = self.machine.label(" # While Loop Statement")
+            self.machine.capp(loop, t) 
+            r1 = self.write(stmt.condition, args, temp, meth, t)
+            l1 = self.machine.label()
+            self.machine.capp(mc.bz(r1, l1))
+            self.write(stmt.body, args, temp, meth, t)
+            self.machine.capp(mc.jmp(loop))
+            self.machine.capp(l1)
         elif isinstance(stmt, ast.For):
             self.machine.capp(self.machine.label(" # For Loop Statement"), t) 
         elif isinstance(stmt, ast.Return):
-            pass
+            self.machine.capp(self.machine.ret(), t) 
         elif isinstance(stmt, ast.Block):
-            pass
+            for stm in stmt.expressions:
+                self.write(stm, args, temp, meth, t + 1)
         elif isinstance(stmt, ast.Break):
             pass
         elif isinstance(stmt, ast.Continue):
@@ -75,8 +93,32 @@ class CodeGenerator():
                 elif stmt.id in temp.keys():
                     return temp.get(stmt.id)
             elif isinstance(stmt, ast.UnaryExpression):
-                reg = self.write(stmt.operand, args, temp, meth, t)
-                
+                r1 = self.write(stmt.operand, args, temp, meth, t)
+                r2 = self.machine.temp_reg()
+                r3 = self.machine.temp_reg()
+                if stmt.type == "boolean":
+                    self.machine.capp(mc.move_immed_i(r2, 0), t)
+                    l1 = self.machine.label()
+                    l2 = self.machine.label()
+                    self.machine.capp(mc.fgt(r3,r1,r2), t)
+                    self.machine.capp(mc.bnz(r3, l1), t)
+                    self.machine.capp(mc.bnz(r2, l1), t)
+                    self.machine.capp(mc.move_immed_i(r3, 0), t)
+                    self.machine.capp(mc.jmp(l2), t)
+                    self.machine.capp(l1, t)
+                    self.machine.capp(mc.move_immed_i(r3, 1), t)
+                    self.machine.capp(l2, t)
+                    return r3
+                else:
+                    flt = False
+                    if stmt. == "float":
+                        flt = True
+                    self.machine.capp(mc.move_immed_i(r2, 0), t)
+                    if flt:
+                        self.machine.capp(mc.fsub(r3,r2,r1), t)
+                    else:
+                        self.machine.capp(mc.isub(r3,r2,r1), t)
+                    return r3
             elif isinstance(stmt, ast.BinaryExpression):
                 r1 = self.write(stmt.left_operand,args, temp, meth, t)
                 r2 = self.write(stmt.right_operand, args, temp, meth, t)
@@ -191,17 +233,39 @@ class CodeGenerator():
                         self.machine.capp(mc.fgeq(r3,r1,r2), t)
                     else:
                         self.machine.capp(mc.igeq(r3,r1,r2), t)
+                    return r3
 
             elif isinstance(stmt, ast.AssignExpression):
-                pass
+                r1 = self.write(stmt.left_expression)
+                r2 = self.write(stmt.right_expression)
+                self.machine.capp(mc.move(r1, r2))
             elif isinstance(stmt, ast.AutoExpression):
-                pass
+                r1 = self.write(stmt.expression):
+                r2 = self.machine.temp_reg()
+                r3 = self.machine.temp_reg()
+                flt = stmt.expression.type == "float"
+                num = 1 if stmt.operand == "inc" else -1
+                if flt:
+                    self.machine.capp(mc.move_immed_f(r2, num), t)
+                    self.machine.capp(mc.fadd(r3, r1,r2), t)
+                    self.machine.capp(mc.move(r1, r3))
+                    return r1
+                else:
+                    self.machine.capp(mc.move_immed_i(r2, num), t)
+                    self.machine.capp(mc.fadd(r3, r1,r2), t)
+                    self.machine.capp(mc.move(r1, r3))
+                    return r1
             elif isinstance(stmt, ast.FieldAccessExpression):
-                pass
+                if isinstance(stmt.base, ast.ThisExpression):
+                    pass
+                elif isinstance(stmt.base, ast.SuperExpression):
+                    pass
+                elif isinstance(stmt.base, ast.ClassReferenceExpression):
+                    pass
             elif isinstance(stmt, ast.MethodCallExpression):
                 pass
             elif isinstance(stmt, ast.NewObjectExpression):
-                pass
+                
             elif isinstance(stmt, ast.ThisExpression):
                 pass
             elif isinstance(stmt, ast.SuperExpression):
@@ -210,3 +274,6 @@ class CodeGenerator():
                 pass  
         else:
             print("HMMM, unknown type" + stmt.__str__())    
+
+
+    def find_statics()

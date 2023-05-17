@@ -58,6 +58,7 @@ class Machine():
         return new_reg
     def top(self):
         return self.code[len(self.code) - 1]
+
     def clean(self):
         self.args = []
         self.args_status = []
